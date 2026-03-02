@@ -308,15 +308,35 @@ class CurrentWeatherScreen(BaseScreen):
             conditions.wind_direction, conditions.wind_speed
         )
         
-        # Condition text (full width, below icon/compass area)
+        # Condition text (full width, with word wrap if needed)
         condition_y = 165
         condition_text = conditions.condition
-        if len(condition_text) > 28:
-            condition_text = condition_text[:25] + "..."
-        canvas.centered_text(condition_y, condition_text, font_medium, TEXT_COLOR)
         
-        # Humidity
-        humidity_y = 195
+        # Word wrap the condition text
+        max_width = self.width - 20  # Leave some margin
+        words = condition_text.split()
+        lines = []
+        current_line = ""
+        
+        for word in words:
+            test_line = f"{current_line} {word}".strip()
+            bbox = canvas.draw.textbbox((0, 0), test_line, font=font_medium)
+            if bbox[2] - bbox[0] <= max_width:
+                current_line = test_line
+            else:
+                if current_line:
+                    lines.append(current_line)
+                current_line = word
+        if current_line:
+            lines.append(current_line)
+        
+        # Draw each line centered
+        line_height = 20
+        for i, line in enumerate(lines[:2]):  # Max 2 lines
+            canvas.centered_text(condition_y + i * line_height, line, font_medium, TEXT_COLOR)
+        
+        # Adjust humidity position based on number of condition lines
+        humidity_y = condition_y + len(lines[:2]) * line_height + 10
         humidity_text = f"Humidity: {conditions.humidity}%"
         canvas.centered_text(humidity_y, humidity_text, font_medium, TEXT_SECONDARY)
         
