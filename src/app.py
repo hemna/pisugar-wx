@@ -79,6 +79,7 @@ class WeatherApp:
             self.last_fetch_time = datetime.now()
             logger.info(f"Fetched weather for {station.name}: "
                        f"{self.current_weather.temperature}°{self.config.settings.temperature_unit}, "
+                       f"Dewpoint: {self.current_weather.dewpoint}, "
                        f"{self.current_weather.condition}, "
                        f"Humidity: {self.current_weather.humidity}%, "
                        f"Wind: {self.current_weather.wind_speed} {self.current_weather.wind_direction}, "
