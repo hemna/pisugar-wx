@@ -68,8 +68,7 @@ class Display:
             backlight=None,  # We handle backlight manually
             width=self.width,
             height=self.height,
-            rotation=self.rotation,
-            swap_rbs=True
+            rotation=self.rotation
         )
         
         logger.info("Display initialized successfully")
