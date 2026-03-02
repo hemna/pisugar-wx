@@ -1,8 +1,18 @@
 """Display driver for ST7789-based displays."""
 
 import logging
+import os
+import sys
 import time
 from typing import Optional
+
+# Add system Python path for lgpio
+sys.path.insert(0, '/usr/lib/python3/dist-packages')
+
+# Add venv path for ST7789
+venv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'venv', 'lib', 'python3.13', 'site-packages')
+if os.path.exists(venv_path):
+    sys.path.insert(0, venv_path)
 
 logger = logging.getLogger(__name__)
 
