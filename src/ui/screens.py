@@ -143,8 +143,8 @@ class CurrentWeatherScreen(BaseScreen):
             station_name_y=LAYOUT_PADDING,
             icon_x=26,  # left section center=50
             icon_y=35,
-            temp_x=140,  # center section
-            temp_y=50,
+            temp_x=50,  # under icon (left section center)
+            temp_y=90,  # below icon
             compass_x=230,  # right section
             compass_y=70,
             compass_size=50,
