@@ -84,12 +84,18 @@ class CurrentWeatherScreen(BaseScreen):
         icon_y = LAYOUT_PADDING
         
         icon_path = get_icon_path(self.icon_dir, conditions.condition)
+        icon_loaded = False
         if icon_path and os.path.exists(icon_path):
-            icon_img = Image.open(icon_path)
-            icon_img = icon_img.resize((ICON_SIZE, ICON_SIZE), Image.Resampling.LANCZOS)
-            canvas.image_at((icon_x, icon_y), icon_img)
-        else:
-            # Draw placeholder rectangle if icon not found
+            try:
+                icon_img = Image.open(icon_path)
+                icon_img = icon_img.resize((ICON_SIZE, ICON_SIZE), Image.Resampling.LANCZOS)
+                canvas.image_at((icon_x, icon_y), icon_img)
+                icon_loaded = True
+            except Exception:
+                icon_loaded = False
+        
+        if not icon_loaded:
+            # Draw placeholder rectangle if icon not found or failed to load
             canvas.rectangle(
                 (icon_x, icon_y, icon_x + ICON_SIZE, icon_y + ICON_SIZE),
                 outline=GRAY
