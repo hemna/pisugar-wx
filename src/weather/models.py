@@ -20,6 +20,8 @@ class CurrentConditions:
     feels_like: float = 0.0
     visibility: Optional[str] = None
     pressure: Optional[str] = None
+    pressure_value: Optional[float] = None  # Raw pressure in inHg for trend calculation
+    pressure_trend: Optional[str] = None  # "rising", "falling", or None (steady/unknown)
     dewpoint: Optional[float] = None  # Fahrenheit
     dewpoint_celsius: Optional[float] = None
 

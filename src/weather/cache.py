@@ -3,13 +3,15 @@
 import json
 import os
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Tuple
 
 from .models import WeatherCache, CurrentConditions, Forecast
 
 
 DEFAULT_CACHE_TTL_MINUTES = 30
+# Pressure history settings
+PRESSURE_HISTORY_MAX_ENTRIES = 12  # Keep last 12 readings (6 hours at 30min intervals)
+PRESSURE_TREND_THRESHOLD = 0.02  # inHg change threshold to consider significant
 
 
 class WeatherCacheManager:
@@ -66,7 +68,9 @@ class WeatherCacheManager:
                     condition_code=current_data.get("condition_code"),
                     feels_like=current_data.get("feels_like", 0.0),
                     visibility=current_data.get("visibility"),
-                    pressure=current_data.get("pressure")
+                    pressure=current_data.get("pressure"),
+                    pressure_value=current_data.get("pressure_value"),
+                    pressure_trend=current_data.get("pressure_trend")
                 )
             
             forecasts = []
@@ -119,7 +123,9 @@ class WeatherCacheManager:
                 "condition_code": cache.current.condition_code,
                 "feels_like": cache.current.feels_like,
                 "visibility": cache.current.visibility,
-                "pressure": cache.current.pressure
+                "pressure": cache.current.pressure,
+                "pressure_value": cache.current.pressure_value,
+                "pressure_trend": cache.current.pressure_trend
             }
         
         forecasts_data = []
@@ -164,3 +170,85 @@ class WeatherCacheManager:
             for filename in os.listdir(self.cache_dir):
                 if filename.endswith(".json"):
                     os.remove(os.path.join(self.cache_dir, filename))
+    
+    def _get_pressure_history_path(self, station_id: str) -> str:
+        """Get pressure history file path for a station."""
+        return os.path.join(self.cache_dir, f"{station_id}_pressure_history.json")
+    
+    def get_pressure_history(self, station_id: str) -> List[Tuple[str, float]]:
+        """Get pressure history for a station.
+        
+        Args:
+            station_id: Station identifier.
+            
+        Returns:
+            List of (timestamp_iso, pressure_inhg) tuples, oldest first.
+        """
+        history_path = self._get_pressure_history_path(station_id)
+        
+        if not os.path.exists(history_path):
+            return []
+        
+        try:
+            with open(history_path, "r") as f:
+                data = json.load(f)
+            return [(entry["timestamp"], entry["pressure"]) for entry in data.get("history", [])]
+        except (json.JSONDecodeError, KeyError, ValueError):
+            return []
+    
+    def add_pressure_reading(self, station_id: str, timestamp: datetime, pressure_inhg: float) -> None:
+        """Add a pressure reading to history.
+        
+        Args:
+            station_id: Station identifier.
+            timestamp: Observation timestamp.
+            pressure_inhg: Pressure in inches of mercury.
+        """
+        history = self.get_pressure_history(station_id)
+        
+        # Add new reading
+        history.append((timestamp.isoformat(), pressure_inhg))
+        
+        # Keep only the last N entries
+        if len(history) > PRESSURE_HISTORY_MAX_ENTRIES:
+            history = history[-PRESSURE_HISTORY_MAX_ENTRIES:]
+        
+        # Save history
+        history_path = self._get_pressure_history_path(station_id)
+        data = {
+            "station_id": station_id,
+            "history": [{"timestamp": ts, "pressure": p} for ts, p in history]
+        }
+        with open(history_path, "w") as f:
+            json.dump(data, f)
+    
+    def calculate_pressure_trend(self, station_id: str, current_pressure: float) -> Optional[str]:
+        """Calculate pressure trend based on history.
+        
+        Compares current pressure to the oldest reading in history.
+        
+        Args:
+            station_id: Station identifier.
+            current_pressure: Current pressure reading in inHg.
+            
+        Returns:
+            "rising" if pressure is increasing, "falling" if decreasing,
+            None if change is below threshold or insufficient history.
+        """
+        history = self.get_pressure_history(station_id)
+        
+        if not history:
+            return None
+        
+        # Get the oldest reading for comparison
+        oldest_pressure = history[0][1]
+        
+        # Calculate difference
+        diff = current_pressure - oldest_pressure
+        
+        if diff > PRESSURE_TREND_THRESHOLD:
+            return "rising"
+        elif diff < -PRESSURE_TREND_THRESHOLD:
+            return "falling"
+        else:
+            return None  # Steady (change below threshold)

@@ -8,7 +8,7 @@ from PIL import Image
 
 from ..weather.models import CurrentConditions, Forecast
 from ..config import WeatherStation
-from .elements import DisplayCanvas, WHITE, BLACK, BLUE, GRAY, LIGHT_GRAY
+from .elements import DisplayCanvas, WHITE, BLACK, BLUE, GRAY, LIGHT_GRAY, GREEN, RED
 from .fonts import FontLoader
 from .icons import get_icon_path
 
@@ -336,6 +336,54 @@ class CurrentWeatherScreen(BaseScreen):
         else:
             canvas.image.paste(icon, position)
     
+    def _draw_pressure_trend_arrow(self, canvas: DisplayCanvas, x: int, y: int, 
+                                    trend: str, size: int = 12) -> int:
+        """Draw a colored trend arrow for barometric pressure.
+        
+        Args:
+            canvas: Canvas to draw on.
+            x: X position for the arrow (right edge).
+            y: Y position (vertical center).
+            trend: "rising" or "falling".
+            size: Arrow size in pixels.
+            
+        Returns:
+            Width of the drawn arrow including spacing.
+        """
+        # Arrow colors
+        if trend == "rising":
+            color = GREEN  # Rising pressure = typically improving weather
+        else:
+            color = RED  # Falling pressure = typically worsening weather
+        
+        # Calculate arrow dimensions
+        arrow_width = size
+        arrow_height = size
+        spacing = 4  # Space between arrow and text
+        
+        # Arrow position - draw to the left of x, centered vertically at y
+        arrow_left = x - arrow_width - spacing
+        arrow_center_y = y
+        
+        if trend == "rising":
+            # Up arrow: point at top, base at bottom
+            points = [
+                (arrow_left + arrow_width // 2, arrow_center_y - arrow_height // 2),  # Top point
+                (arrow_left, arrow_center_y + arrow_height // 2),  # Bottom left
+                (arrow_left + arrow_width, arrow_center_y + arrow_height // 2),  # Bottom right
+            ]
+        else:
+            # Down arrow: point at bottom, base at top
+            points = [
+                (arrow_left + arrow_width // 2, arrow_center_y + arrow_height // 2),  # Bottom point
+                (arrow_left, arrow_center_y - arrow_height // 2),  # Top left
+                (arrow_left + arrow_width, arrow_center_y - arrow_height // 2),  # Top right
+            ]
+        
+        canvas.draw.polygon(points, fill=color)
+        
+        return arrow_width + spacing
+    
     def _load_icon(self, canvas: DisplayCanvas, conditions: CurrentConditions, icon_x: int, icon_y: int) -> bool:
         """Load and draw weather icon at specified position.
         
@@ -456,14 +504,26 @@ class CurrentWeatherScreen(BaseScreen):
             # Draw humidity on left side
             canvas.text((20, layout.humidity_y), humidity_text, font=font_medium, fill=TEXT_SECONDARY)
             
-            # Draw pressure with small barometer icon on right side
+            # Draw pressure with small barometer icon and optional trend arrow on right side
             pressure_text = conditions.pressure
             pressure_bbox = canvas.draw.textbbox((0, 0), pressure_text, font=font_medium)
             pressure_width = pressure_bbox[2] - pressure_bbox[0]
+            pressure_height = pressure_bbox[3] - pressure_bbox[1]
             
-            # Load and draw small barometer icon (24x24)
+            # Calculate trend arrow width if needed
+            trend_arrow_width = 0
+            if conditions.pressure_trend:
+                trend_arrow_width = 16  # Arrow size + spacing
+            
+            # Load and draw small barometer icon (20x20)
             barometer_size = 20
             barometer_path = os.path.join(self.icon_dir, "barometer.png")
+            
+            # Calculate total width: icon + spacing + text + trend arrow
+            total_width = barometer_size + 4 + pressure_width + trend_arrow_width
+            right_margin = 20
+            start_x = self.width - right_margin - total_width
+            
             if os.path.exists(barometer_path):
                 try:
                     baro_img = Image.open(barometer_path)
@@ -471,19 +531,35 @@ class CurrentWeatherScreen(BaseScreen):
                         baro_img = baro_img.convert('RGBA')
                     baro_img = baro_img.resize((barometer_size, barometer_size), Image.Resampling.LANCZOS)
                     baro_img = self._invert_icon(baro_img)
-                    # Position: right side, icon then text
-                    icon_x = self.width - 20 - pressure_width - barometer_size - 4
+                    # Position: barometer icon
+                    icon_x = start_x
                     icon_y = layout.humidity_y - 2
                     self._paste_with_alpha(canvas, baro_img, (icon_x, icon_y))
                     # Draw pressure text after icon
-                    canvas.text((icon_x + barometer_size + 4, layout.humidity_y), pressure_text, font=font_medium, fill=TEXT_SECONDARY)
+                    text_x = icon_x + barometer_size + 4
+                    canvas.text((text_x, layout.humidity_y), pressure_text, font=font_medium, fill=TEXT_SECONDARY)
+                    # Draw trend arrow after pressure text if we have a trend
+                    if conditions.pressure_trend:
+                        arrow_x = self.width - right_margin
+                        arrow_y = layout.humidity_y + pressure_height // 2
+                        self._draw_pressure_trend_arrow(canvas, arrow_x, arrow_y, conditions.pressure_trend)
                 except Exception as e:
                     logger.warning(f"Failed to load barometer icon: {e}")
-                    # Fall back to text only
-                    canvas.text((self.width - 20 - pressure_width, layout.humidity_y), pressure_text, font=font_medium, fill=TEXT_SECONDARY)
+                    # Fall back to text only with trend arrow
+                    text_x = self.width - right_margin - pressure_width - trend_arrow_width
+                    canvas.text((text_x, layout.humidity_y), pressure_text, font=font_medium, fill=TEXT_SECONDARY)
+                    if conditions.pressure_trend:
+                        arrow_x = self.width - right_margin
+                        arrow_y = layout.humidity_y + pressure_height // 2
+                        self._draw_pressure_trend_arrow(canvas, arrow_x, arrow_y, conditions.pressure_trend)
             else:
-                # No icon, just text
-                canvas.text((self.width - 20 - pressure_width, layout.humidity_y), pressure_text, font=font_medium, fill=TEXT_SECONDARY)
+                # No icon, just text with optional trend arrow
+                text_x = self.width - right_margin - pressure_width - trend_arrow_width
+                canvas.text((text_x, layout.humidity_y), pressure_text, font=font_medium, fill=TEXT_SECONDARY)
+                if conditions.pressure_trend:
+                    arrow_x = self.width - right_margin
+                    arrow_y = layout.humidity_y + pressure_height // 2
+                    self._draw_pressure_trend_arrow(canvas, arrow_x, arrow_y, conditions.pressure_trend)
         else:
             # No pressure data, center humidity
             canvas.centered_text(layout.humidity_y, humidity_text, font_medium, TEXT_SECONDARY)
@@ -583,6 +659,30 @@ class CurrentWeatherScreen(BaseScreen):
         humidity_y = layout.condition_y + len(lines[:2]) * line_height + 10
         humidity_text = f"Humidity: {conditions.humidity}%"
         canvas.centered_text(humidity_y, humidity_text, font_medium, TEXT_SECONDARY)
+        
+        # Display pressure with trend arrow if available (portrait mode)
+        if conditions.pressure:
+            pressure_y = humidity_y + 22
+            pressure_text = conditions.pressure
+            pressure_bbox = canvas.draw.textbbox((0, 0), pressure_text, font=font_medium)
+            pressure_width = pressure_bbox[2] - pressure_bbox[0]
+            pressure_height = pressure_bbox[3] - pressure_bbox[1]
+            
+            # Calculate trend arrow width if needed
+            trend_arrow_width = 0
+            if conditions.pressure_trend:
+                trend_arrow_width = 16  # Arrow size + spacing
+            
+            # Center the pressure text (and arrow if present)
+            total_width = pressure_width + trend_arrow_width
+            text_x = (self.width - total_width) // 2
+            canvas.text((text_x, pressure_y), pressure_text, font=font_medium, fill=TEXT_SECONDARY)
+            
+            # Draw trend arrow after pressure text if we have a trend
+            if conditions.pressure_trend:
+                arrow_x = text_x + pressure_width + trend_arrow_width
+                arrow_y = pressure_y + pressure_height // 2
+                self._draw_pressure_trend_arrow(canvas, arrow_x, arrow_y, conditions.pressure_trend)
         
         # Footer - Last updated or cached indicator
         if is_cached:

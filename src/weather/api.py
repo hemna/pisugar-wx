@@ -274,7 +274,8 @@ class WeatherAPI:
                         wind_speed = f"{int(observation['wind_speed_mph'])} mph" if observation.get("wind_speed_mph") else forecast.wind_speed
                         wind_dir = observation.get("wind_direction") or forecast.wind_direction
                         condition = observation.get("condition") or forecast.condition
-                        pressure = f"{observation['pressure_inhg']:.2f} inHg" if observation.get("pressure_inhg") else None
+                        pressure_inhg = observation.get("pressure_inhg")
+                        pressure = f"{pressure_inhg:.2f} inHg" if pressure_inhg else None
                     else:
                         temp = forecast.temperature
                         temp_c = fahrenheit_to_celsius(temp)
@@ -285,6 +286,7 @@ class WeatherAPI:
                         wind_dir = forecast.wind_direction
                         condition = forecast.condition
                         pressure = None
+                        pressure_inhg = None
                     
                     current = CurrentConditions(
                         station_id=station.id,
@@ -297,6 +299,7 @@ class WeatherAPI:
                         condition=condition,
                         feels_like=temp,  # Simplified
                         pressure=pressure,
+                        pressure_value=pressure_inhg,
                         dewpoint=dewpoint_f,
                         dewpoint_celsius=dewpoint_c
                     )
@@ -332,6 +335,20 @@ class WeatherAPI:
         # Fetch fresh data
         try:
             current, forecasts = self.get_forecast(station)
+            
+            # Calculate pressure trend if we have pressure data
+            if current and current.pressure_value is not None:
+                # Calculate trend before adding new reading
+                pressure_trend = cache_manager.calculate_pressure_trend(
+                    station.id, current.pressure_value
+                )
+                current.pressure_trend = pressure_trend
+                
+                # Add current reading to history
+                cache_manager.add_pressure_reading(
+                    station.id, current.timestamp, current.pressure_value
+                )
+                logger.debug(f"Pressure for {station.id}: {current.pressure_value:.2f} inHg, trend: {pressure_trend}")
             
             weather_cache = WeatherCache(
                 station_id=station.id,
