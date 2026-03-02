@@ -12,10 +12,10 @@ from typing import Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from src.config import load_config, AppConfig
-from display import Display, MockDisplay
-from weather.api import WeatherAPI
-from weather.cache import WeatherCacheManager
-from weather.models import CurrentConditions, Forecast
+from src.display import Display, MockDisplay
+from src.weather.api import WeatherAPI
+from src.weather.cache import WeatherCacheManager
+from src.weather.models import CurrentConditions, Forecast
 
 # Configure logging
 logging.basicConfig(
