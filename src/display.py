@@ -8,7 +8,10 @@ logger = logging.getLogger(__name__)
 
 try:
     import ST7789
-    import RPi.GPIO as GPIO
+    try:
+        import lgpio as GPIO
+    except ImportError:
+        import RPi.GPIO as GPIO
     DISPLAY_AVAILABLE = True
 except ImportError as e:
     DISPLAY_AVAILABLE = False
