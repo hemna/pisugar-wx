@@ -145,6 +145,8 @@ class WeatherApp:
                 self.current_station_index + 1
             ) % len(self.config.stations)
             logger.info(f"Cycled to station {self.current_station_index}")
+            # Fetch weather for the new station
+            self.fetch_weather()
     
     def run(self) -> None:
         """Main application loop."""
