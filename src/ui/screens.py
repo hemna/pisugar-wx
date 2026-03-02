@@ -444,9 +444,45 @@ class CurrentWeatherScreen(BaseScreen):
         for i, line in enumerate(lines[:2]):  # Max 2 lines
             canvas.centered_text(layout.condition_y + i * line_height, line, font_medium, TEXT_COLOR)
         
-        # Bottom: Humidity (centered)
+        # Bottom row: Humidity (left) and Pressure (right)
         humidity_text = f"Humidity: {conditions.humidity}%"
-        canvas.centered_text(layout.humidity_y, humidity_text, font_medium, TEXT_SECONDARY)
+        
+        # Check if we have pressure data
+        if conditions.pressure:
+            # Draw humidity on left side
+            canvas.text((20, layout.humidity_y), humidity_text, font=font_medium, fill=TEXT_SECONDARY)
+            
+            # Draw pressure with small barometer icon on right side
+            pressure_text = conditions.pressure
+            pressure_bbox = canvas.draw.textbbox((0, 0), pressure_text, font=font_medium)
+            pressure_width = pressure_bbox[2] - pressure_bbox[0]
+            
+            # Load and draw small barometer icon (24x24)
+            barometer_size = 20
+            barometer_path = os.path.join(self.icon_dir, "barometer.png")
+            if os.path.exists(barometer_path):
+                try:
+                    baro_img = Image.open(barometer_path)
+                    if baro_img.mode != 'RGBA':
+                        baro_img = baro_img.convert('RGBA')
+                    baro_img = baro_img.resize((barometer_size, barometer_size), Image.Resampling.LANCZOS)
+                    baro_img = self._invert_icon(baro_img)
+                    # Position: right side, icon then text
+                    icon_x = self.width - 20 - pressure_width - barometer_size - 4
+                    icon_y = layout.humidity_y - 2
+                    self._paste_with_alpha(canvas, baro_img, (icon_x, icon_y))
+                    # Draw pressure text after icon
+                    canvas.text((icon_x + barometer_size + 4, layout.humidity_y), pressure_text, font=font_medium, fill=TEXT_SECONDARY)
+                except Exception as e:
+                    logger.warning(f"Failed to load barometer icon: {e}")
+                    # Fall back to text only
+                    canvas.text((self.width - 20 - pressure_width, layout.humidity_y), pressure_text, font=font_medium, fill=TEXT_SECONDARY)
+            else:
+                # No icon, just text
+                canvas.text((self.width - 20 - pressure_width, layout.humidity_y), pressure_text, font=font_medium, fill=TEXT_SECONDARY)
+        else:
+            # No pressure data, center humidity
+            canvas.centered_text(layout.humidity_y, humidity_text, font_medium, TEXT_SECONDARY)
         
         # Footer
         if is_cached:
