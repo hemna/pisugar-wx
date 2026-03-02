@@ -309,14 +309,14 @@ class CurrentWeatherScreen(BaseScreen):
         )
         
         # Condition text (full width, below icon/compass area)
-        condition_y = 140
+        condition_y = 165
         condition_text = conditions.condition
         if len(condition_text) > 28:
             condition_text = condition_text[:25] + "..."
         canvas.centered_text(condition_y, condition_text, font_medium, TEXT_COLOR)
         
         # Humidity
-        humidity_y = 170
+        humidity_y = 195
         humidity_text = f"Humidity: {conditions.humidity}%"
         canvas.centered_text(humidity_y, humidity_text, font_medium, TEXT_SECONDARY)
         
