@@ -56,20 +56,21 @@ class Display:
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
         
+        # Setup backlight pin
+        GPIO.setup(18, GPIO.OUT)
+        GPIO.output(18, GPIO.HIGH)
+        
         self._display = ST7789.ST7789(
             port=0,
             cs=0,
             dc=25,
             rst=27,
-            backlight=18,
+            backlight=None,  # We handle backlight manually
             width=self.width,
             height=self.height,
-            rotation=self.rotation
+            rotation=self.rotation,
+            swap_rbs=True
         )
-        
-        # Set backlight brightness (0.0 to 1.0)
-        if hasattr(self._display, 'set_backlight'):
-            self._display.set_backlight(self.brightness / 100.0)
         
         logger.info("Display initialized successfully")
     

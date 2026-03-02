@@ -101,8 +101,8 @@ class WeatherApp:
                 "assets", "icons"
             )
             screen = CurrentWeatherScreen(
-                width=240,
-                height=280,
+                width=280,
+                height=240,
                 icon_dir=icon_dir,
                 temperature_unit=self.config.settings.temperature_unit
             )
@@ -112,8 +112,6 @@ class WeatherApp:
                 is_cached=False,
                 last_updated=self.last_fetch_time
             )
-            # Rotate 90 degrees for display orientation
-            image = image.rotate(-90, expand=True)
             self.display.show_image(image)
             logger.debug(f"Displayed weather for {station.name}")
         except Exception as e:
