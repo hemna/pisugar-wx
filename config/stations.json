@@ -12,6 +12,7 @@
     "refresh_interval_minutes": 15,
     "cycle_interval_seconds": 30,
     "temperature_unit": "F",
-    "display_brightness": 100
+    "display_brightness": 100,
+    "orientation": "portrait"
   }
 }

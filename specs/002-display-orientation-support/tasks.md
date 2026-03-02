@@ -23,8 +23,8 @@
 
 **Purpose**: Prepare codebase for orientation feature
 
-- [ ] T001 Create test file for screen orientation tests in tests/unit/test_screens.py
-- [ ] T002 [P] Create test file for config orientation tests in tests/unit/test_config.py
+- [X] T001 Create test file for screen orientation tests in tests/unit/test_screens.py
+- [X] T002 [P] Create test file for config orientation tests in tests/unit/test_config.py
 
 ---
 
@@ -34,10 +34,10 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T003 Add orientation field to AppSettings dataclass in src/config.py
-- [ ] T004 Update load_config() to parse orientation from JSON in src/config.py
-- [ ] T005 Update save_config() to include orientation field in src/config.py
-- [ ] T006 Add orientation validation with default fallback and warning logging in src/config.py
+- [X] T003 Add orientation field to AppSettings dataclass in src/config.py
+- [X] T004 Update load_config() to parse orientation from JSON in src/config.py
+- [X] T005 Update save_config() to include orientation field in src/config.py
+- [X] T006 Add orientation validation with default fallback and warning logging in src/config.py
 
 **Checkpoint**: Configuration infrastructure ready - user story implementation can begin
 
@@ -51,15 +51,15 @@
 
 ### Tests for User Story 1
 
-- [ ] T007 [P] [US1] Unit test for portrait layout dimensions in tests/unit/test_screens.py
-- [ ] T008 [P] [US1] Unit test for portrait config parsing in tests/unit/test_config.py
+- [X] T007 [P] [US1] Unit test for portrait layout dimensions in tests/unit/test_screens.py
+- [X] T008 [P] [US1] Unit test for portrait config parsing in tests/unit/test_config.py
 
 ### Implementation for User Story 1
 
-- [ ] T009 [US1] Add orientation parameter to CurrentWeatherScreen.__init__() in src/ui/screens.py
-- [ ] T010 [US1] Create _get_portrait_layout() method returning LayoutConfig values in src/ui/screens.py
-- [ ] T011 [US1] Update render() to use layout config for portrait mode in src/ui/screens.py
-- [ ] T012 [US1] Update app.py to pass orientation from config to CurrentWeatherScreen in src/app.py
+- [X] T009 [US1] Add orientation parameter to CurrentWeatherScreen.__init__() in src/ui/screens.py
+- [X] T010 [US1] Create _get_portrait_layout() method returning LayoutConfig values in src/ui/screens.py
+- [X] T011 [US1] Update render() to use layout config for portrait mode in src/ui/screens.py
+- [X] T012 [US1] Update app.py to pass orientation from config to CurrentWeatherScreen in src/app.py
 
 **Checkpoint**: Portrait mode works with explicit orientation config - existing functionality preserved
 
@@ -73,16 +73,16 @@
 
 ### Tests for User Story 2
 
-- [ ] T013 [P] [US2] Unit test for landscape layout dimensions in tests/unit/test_screens.py
-- [ ] T014 [P] [US2] Unit test for landscape config parsing in tests/unit/test_config.py
+- [X] T013 [P] [US2] Unit test for landscape layout dimensions in tests/unit/test_screens.py
+- [X] T014 [P] [US2] Unit test for landscape config parsing in tests/unit/test_config.py
 
 ### Implementation for User Story 2
 
-- [ ] T015 [US2] Create _get_landscape_layout() method with three-section layout values in src/ui/screens.py
-- [ ] T016 [US2] Implement _render_landscape() method for landscape-specific rendering in src/ui/screens.py
-- [ ] T017 [US2] Update render() to choose layout based on orientation in src/ui/screens.py
-- [ ] T018 [US2] Add image rotation for landscape mode (transpose 90°) in src/app.py before display
-- [ ] T019 [US2] Update Display class to handle rotated image dimensions in src/display.py
+- [X] T015 [US2] Create _get_landscape_layout() method with three-section layout values in src/ui/screens.py
+- [X] T016 [US2] Implement _render_landscape() method for landscape-specific rendering in src/ui/screens.py
+- [X] T017 [US2] Update render() to choose layout based on orientation in src/ui/screens.py
+- [X] T018 [US2] Add image rotation for landscape mode (transpose 90°) in src/app.py before display
+- [X] T019 [US2] Update Display class to handle rotated image dimensions in src/display.py (N/A - Display already handles any image size)
 
 **Checkpoint**: Landscape mode renders correctly with proper rotation
 
@@ -96,14 +96,14 @@
 
 ### Tests for User Story 3
 
-- [ ] T020 [P] [US3] Unit test for default orientation when not specified in tests/unit/test_config.py
-- [ ] T021 [P] [US3] Unit test for invalid orientation fallback with warning in tests/unit/test_config.py
+- [X] T020 [P] [US3] Unit test for default orientation when not specified in tests/unit/test_config.py
+- [X] T021 [P] [US3] Unit test for invalid orientation fallback with warning in tests/unit/test_config.py
 
 ### Implementation for User Story 3
 
-- [ ] T022 [US3] Update config/stations.json to include orientation setting in config/stations.json
-- [ ] T023 [US3] Add case-insensitive orientation comparison in src/config.py
-- [ ] T024 [US3] Ensure backward compatibility when orientation is missing in src/config.py
+- [X] T022 [US3] Update config/stations.json to include orientation setting in config/stations.json
+- [X] T023 [US3] Add case-insensitive orientation comparison in src/config.py
+- [X] T024 [US3] Ensure backward compatibility when orientation is missing in src/config.py
 
 **Checkpoint**: Orientation fully configurable via JSON file
 
@@ -113,9 +113,9 @@
 
 **Purpose**: Final improvements and documentation
 
-- [ ] T025 [P] Update quickstart.md with orientation configuration examples in specs/002-display-orientation-support/quickstart.md
-- [ ] T026 [P] Add docstrings to all new orientation-related functions in src/ui/screens.py
-- [ ] T027 Run all tests and verify no regressions with pytest tests/
+- [X] T025 [P] Update quickstart.md with orientation configuration examples in specs/002-display-orientation-support/quickstart.md
+- [X] T026 [P] Add docstrings to all new orientation-related functions in src/ui/screens.py
+- [X] T027 Run all tests and verify no regressions with pytest tests/
 - [ ] T028 Test on Pi hardware in both orientations via SSH
 
 ---

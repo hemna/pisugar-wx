@@ -2,9 +2,9 @@
 
 import logging
 import os
-from typing import Optional
+from dataclasses import dataclass
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 
 from ..weather.models import CurrentConditions, Forecast
 from ..config import WeatherStation
@@ -24,6 +24,40 @@ TEXT_COLOR = WHITE
 TEXT_SECONDARY = LIGHT_GRAY
 
 
+@dataclass
+class LayoutConfig:
+    """Configuration for screen element positioning based on orientation.
+    
+    Attributes:
+        width: Canvas width in pixels.
+        height: Canvas height in pixels.
+        station_name_y: Y position for station name.
+        icon_x: X position for weather icon.
+        icon_y: Y position for weather icon.
+        temp_x: X center position for temperature.
+        temp_y: Y position for temperature.
+        compass_x: X center position for wind compass.
+        compass_y: Y center position for wind compass.
+        compass_size: Diameter of wind compass.
+        condition_y: Y position for condition text.
+        humidity_y: Y position for humidity text.
+        footer_y: Y position for footer text.
+    """
+    width: int
+    height: int
+    station_name_y: int
+    icon_x: int
+    icon_y: int
+    temp_x: int
+    temp_y: int
+    compass_x: int
+    compass_y: int
+    compass_size: int
+    condition_y: int
+    humidity_y: int
+    footer_y: int
+
+
 class BaseScreen:
     """Base class for display screens."""
     
@@ -41,18 +75,93 @@ class BaseScreen:
 
 
 class CurrentWeatherScreen(BaseScreen):
-    """Screen displaying current weather conditions."""
+    """Screen displaying current weather conditions.
+    
+    Supports both portrait (240x280) and landscape (280x240) orientations.
+    """
     
     def __init__(
         self,
         width: int = 240,
         height: int = 280,
         icon_dir: str = "assets/icons",
-        temperature_unit: str = "F"
+        temperature_unit: str = "F",
+        orientation: str = "portrait"
     ):
-        super().__init__(width, height)
+        """Initialize the current weather screen.
+        
+        Args:
+            width: Display width in pixels (ignored, determined by orientation).
+            height: Display height in pixels (ignored, determined by orientation).
+            icon_dir: Directory containing weather icons.
+            temperature_unit: Temperature unit ('F' or 'C').
+            orientation: Display orientation ('portrait' or 'landscape').
+        """
+        self.orientation = orientation.lower()
+        
+        # Set dimensions based on orientation
+        if self.orientation == "landscape":
+            actual_width, actual_height = 280, 240
+        else:
+            actual_width, actual_height = 240, 280
+        
+        super().__init__(actual_width, actual_height)
         self.icon_dir = icon_dir
         self.temperature_unit = temperature_unit
+    
+    def _get_portrait_layout(self) -> LayoutConfig:
+        """Get layout configuration for portrait mode (240x280).
+        
+        Returns:
+            LayoutConfig with portrait positioning values.
+        """
+        return LayoutConfig(
+            width=240,
+            height=280,
+            station_name_y=LAYOUT_PADDING,
+            icon_x=46,  # left_center=70, icon centered
+            icon_y=35,
+            temp_x=70,
+            temp_y=90,
+            compass_x=180,
+            compass_y=75,
+            compass_size=55,
+            condition_y=165,
+            humidity_y=195,  # dynamic based on condition lines
+            footer_y=265
+        )
+    
+    def _get_landscape_layout(self) -> LayoutConfig:
+        """Get layout configuration for landscape mode (280x240).
+        
+        Returns:
+            LayoutConfig with landscape positioning values.
+        """
+        return LayoutConfig(
+            width=280,
+            height=240,
+            station_name_y=LAYOUT_PADDING,
+            icon_x=26,  # left section center=50
+            icon_y=35,
+            temp_x=140,  # center section
+            temp_y=45,
+            compass_x=230,  # right section
+            compass_y=70,
+            compass_size=50,
+            condition_y=100,  # center section, below temp
+            humidity_y=210,  # bottom
+            footer_y=225
+        )
+    
+    def _get_layout(self) -> LayoutConfig:
+        """Get the appropriate layout configuration based on orientation.
+        
+        Returns:
+            LayoutConfig for the current orientation.
+        """
+        if self.orientation == "landscape":
+            return self._get_landscape_layout()
+        return self._get_portrait_layout()
     
     def _get_temp_color(self, temp: float) -> tuple:
         """Get color for temperature display (blue for cold, red for hot).
@@ -227,6 +336,132 @@ class CurrentWeatherScreen(BaseScreen):
         else:
             canvas.image.paste(icon, position)
     
+    def _load_icon(self, canvas: DisplayCanvas, conditions: CurrentConditions, icon_x: int, icon_y: int) -> bool:
+        """Load and draw weather icon at specified position.
+        
+        Args:
+            canvas: Canvas to draw on.
+            conditions: Weather conditions for icon selection.
+            icon_x: X position for icon.
+            icon_y: Y position for icon.
+            
+        Returns:
+            True if icon was loaded successfully, False otherwise.
+        """
+        icon_path = get_icon_path(self.icon_dir, conditions.condition)
+        logger.debug(f"Icon lookup: condition='{conditions.condition}', path='{icon_path}', exists={icon_path and os.path.exists(icon_path)}")
+        
+        if icon_path and os.path.exists(icon_path):
+            try:
+                icon_img = Image.open(icon_path)
+                if icon_img.mode != 'RGBA':
+                    icon_img = icon_img.convert('RGBA')
+                icon_img = icon_img.resize((ICON_SIZE, ICON_SIZE), Image.Resampling.LANCZOS)
+                icon_img = self._invert_icon(icon_img)
+                self._paste_with_alpha(canvas, icon_img, (icon_x, icon_y))
+                logger.debug(f"Icon loaded successfully: {icon_path}")
+                return True
+            except Exception as e:
+                logger.warning(f"Failed to load icon: {e}")
+        else:
+            logger.warning(f"Icon not found: icon_dir={self.icon_dir}, exists={os.path.exists(self.icon_dir)}")
+        
+        return False
+    
+    def _draw_icon_placeholder(self, canvas: DisplayCanvas, icon_x: int, icon_y: int) -> None:
+        """Draw placeholder rectangle when icon is not available."""
+        canvas.rectangle(
+            (icon_x, icon_y, icon_x + ICON_SIZE, icon_y + ICON_SIZE),
+            outline=TEXT_SECONDARY
+        )
+    
+    def _render_landscape(
+        self,
+        canvas: DisplayCanvas,
+        station: WeatherStation,
+        conditions: CurrentConditions,
+        is_cached: bool,
+        last_updated,
+        layout: LayoutConfig
+    ) -> None:
+        """Render weather display in landscape layout (280x240).
+        
+        Three-section layout: icon (left), temp+condition (center), compass (right).
+        
+        Args:
+            canvas: Canvas to draw on.
+            station: Weather station information.
+            conditions: Current weather conditions.
+            is_cached: Whether data is from cache.
+            last_updated: Last update timestamp.
+            layout: Layout configuration for positioning.
+        """
+        font_small = self.font_loader.get_small_font()
+        font_medium = self.font_loader.get_default_font()
+        font_large = self.font_loader.get_large_font()
+        
+        # Station name centered at top
+        canvas.centered_text(layout.station_name_y, station.name, font_medium, TEXT_COLOR)
+        
+        # Left section: Weather icon
+        if not self._load_icon(canvas, conditions, layout.icon_x, layout.icon_y):
+            self._draw_icon_placeholder(canvas, layout.icon_x, layout.icon_y)
+        
+        # Center section: Temperature
+        temp_color = self._get_temp_color(conditions.temperature)
+        temp_text = f"{int(conditions.temperature)}°{self.temperature_unit}"
+        temp_bbox = canvas.draw.textbbox((0, 0), temp_text, font=font_large)
+        temp_width = temp_bbox[2] - temp_bbox[0]
+        temp_x = layout.temp_x - temp_width // 2
+        canvas.text((temp_x, layout.temp_y), temp_text, font=font_large, fill=temp_color)
+        
+        # Right section: Wind compass
+        self._draw_wind_compass(
+            canvas, layout.compass_x, layout.compass_y, layout.compass_size,
+            conditions.wind_direction, conditions.wind_speed
+        )
+        
+        # Center section (below temp): Condition text with word wrap
+        max_width = 140  # Narrower for landscape center section
+        words = conditions.condition.split()
+        lines = []
+        current_line = ""
+        
+        for word in words:
+            test_line = f"{current_line} {word}".strip()
+            bbox = canvas.draw.textbbox((0, 0), test_line, font=font_medium)
+            if bbox[2] - bbox[0] <= max_width:
+                current_line = test_line
+            else:
+                if current_line:
+                    lines.append(current_line)
+                current_line = word
+        if current_line:
+            lines.append(current_line)
+        
+        # Draw condition lines centered in middle section
+        line_height = 20
+        for i, line in enumerate(lines[:2]):  # Max 2 lines
+            bbox = canvas.draw.textbbox((0, 0), line, font=font_medium)
+            text_w = bbox[2] - bbox[0]
+            line_x = layout.temp_x - text_w // 2
+            canvas.text((line_x, layout.condition_y + i * line_height), line, font=font_medium, fill=TEXT_COLOR)
+        
+        # Bottom: Humidity (centered)
+        humidity_text = f"Humidity: {conditions.humidity}%"
+        canvas.centered_text(layout.humidity_y, humidity_text, font_medium, TEXT_SECONDARY)
+        
+        # Footer
+        if is_cached:
+            footer_text = "Cached Data"
+        elif last_updated:
+            footer_text = f"Updated: {last_updated.strftime('%H:%M')}"
+        else:
+            footer_text = ""
+        
+        if footer_text:
+            canvas.centered_text(layout.footer_y, footer_text, font_small, TEXT_SECONDARY)
+    
     def render(
         self,
         station: WeatherStation,
@@ -235,6 +470,8 @@ class CurrentWeatherScreen(BaseScreen):
         last_updated=None
     ) -> Image.Image:
         """Render current weather display.
+        
+        Renders in portrait or landscape mode based on orientation setting.
         
         Args:
             station: Weather station information.
@@ -246,75 +483,42 @@ class CurrentWeatherScreen(BaseScreen):
             PIL Image for display.
         """
         canvas = self.create_canvas()
+        layout = self._get_layout()
         
-        # Station name (header)
+        # Use landscape rendering for landscape orientation
+        if self.orientation == "landscape":
+            self._render_landscape(canvas, station, conditions, is_cached, last_updated, layout)
+            return canvas.get_image()
+        
+        # Portrait rendering (original layout)
         font_small = self.font_loader.get_small_font()
         font_medium = self.font_loader.get_default_font()
         font_large = self.font_loader.get_large_font()
         
         # Draw station name centered at top
-        canvas.centered_text(LAYOUT_PADDING, station.name, font_medium, TEXT_COLOR)
+        canvas.centered_text(layout.station_name_y, station.name, font_medium, TEXT_COLOR)
         
-        # Layout: Left side has icon + temp, right side has wind compass
-        left_center = 70  # Center of left column
-        right_center = 180  # Center of right column
+        # Draw weather icon
+        if not self._load_icon(canvas, conditions, layout.icon_x, layout.icon_y):
+            self._draw_icon_placeholder(canvas, layout.icon_x, layout.icon_y)
         
-        # Draw weather icon (left side)
-        icon_x = left_center - ICON_SIZE // 2
-        icon_y = 35
-        
-        icon_path = get_icon_path(self.icon_dir, conditions.condition)
-        logger.debug(f"Icon lookup: condition='{conditions.condition}', path='{icon_path}', exists={icon_path and os.path.exists(icon_path)}")
-        icon_loaded = False
-        if icon_path and os.path.exists(icon_path):
-            try:
-                icon_img = Image.open(icon_path)
-                # Convert to RGBA if not already, to handle transparency
-                if icon_img.mode != 'RGBA':
-                    icon_img = icon_img.convert('RGBA')
-                icon_img = icon_img.resize((ICON_SIZE, ICON_SIZE), Image.Resampling.LANCZOS)
-                # Invert colors for dark theme
-                icon_img = self._invert_icon(icon_img)
-                # Paste with transparency mask
-                self._paste_with_alpha(canvas, icon_img, (icon_x, icon_y))
-                icon_loaded = True
-                logger.debug(f"Icon loaded successfully: {icon_path}")
-            except Exception as e:
-                logger.warning(f"Failed to load icon: {e}")
-                icon_loaded = False
-        else:
-            logger.warning(f"Icon not found: icon_dir={self.icon_dir}, exists={os.path.exists(self.icon_dir)}")
-        
-        if not icon_loaded:
-            # Draw placeholder rectangle if icon not found or failed to load
-            canvas.rectangle(
-                (icon_x, icon_y, icon_x + ICON_SIZE, icon_y + ICON_SIZE),
-                outline=TEXT_SECONDARY
-            )
-        
-        # Temperature (left side, below icon) with color based on temp
+        # Temperature with color based on temp
         temp_color = self._get_temp_color(conditions.temperature)
         temp_text = f"{int(conditions.temperature)}°{self.temperature_unit}"
         temp_bbox = canvas.draw.textbbox((0, 0), temp_text, font=font_large)
         temp_width = temp_bbox[2] - temp_bbox[0]
-        temp_x = left_center - temp_width // 2
-        canvas.text((temp_x, 90), temp_text, font=font_large, fill=temp_color)
+        temp_x = layout.temp_x - temp_width // 2
+        canvas.text((temp_x, layout.temp_y), temp_text, font=font_large, fill=temp_color)
         
-        # Wind compass rose (right side)
-        compass_size = 55
-        compass_y = 75
+        # Wind compass rose
         self._draw_wind_compass(
-            canvas, right_center, compass_y, compass_size,
+            canvas, layout.compass_x, layout.compass_y, layout.compass_size,
             conditions.wind_direction, conditions.wind_speed
         )
         
-        # Condition text (full width, with word wrap if needed)
-        condition_y = 165
-        condition_text = conditions.condition
-        
-        # Word wrap the condition text
+        # Condition text with word wrap
         max_width = self.width - 20  # Leave some margin
-        words = condition_text.split()
+        words = conditions.condition.split()
         lines = []
         current_line = ""
         
@@ -333,10 +537,10 @@ class CurrentWeatherScreen(BaseScreen):
         # Draw each line centered
         line_height = 20
         for i, line in enumerate(lines[:2]):  # Max 2 lines
-            canvas.centered_text(condition_y + i * line_height, line, font_medium, TEXT_COLOR)
+            canvas.centered_text(layout.condition_y + i * line_height, line, font_medium, TEXT_COLOR)
         
         # Adjust humidity position based on number of condition lines
-        humidity_y = condition_y + len(lines[:2]) * line_height + 10
+        humidity_y = layout.condition_y + len(lines[:2]) * line_height + 10
         humidity_text = f"Humidity: {conditions.humidity}%"
         canvas.centered_text(humidity_y, humidity_text, font_medium, TEXT_SECONDARY)
         
@@ -349,7 +553,7 @@ class CurrentWeatherScreen(BaseScreen):
             footer_text = ""
         
         if footer_text:
-            canvas.centered_text(self.height - 15, footer_text, font_small, TEXT_SECONDARY)
+            canvas.centered_text(layout.footer_y, footer_text, font_small, TEXT_SECONDARY)
         
         return canvas.get_image()
 

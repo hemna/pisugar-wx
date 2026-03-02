@@ -18,6 +18,12 @@ from src.weather.cache import WeatherCacheManager
 from src.weather.models import CurrentConditions, Forecast
 from src.ui.screens import CurrentWeatherScreen, OfflineScreen, ErrorScreen
 
+# Import PIL Image for landscape rotation
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -88,6 +94,7 @@ class WeatherApp:
             return
         
         station = self.config.stations[self.current_station_index]
+        orientation = self.config.settings.orientation
         
         # Check if we have weather data
         if not self.current_weather:
@@ -105,10 +112,9 @@ class WeatherApp:
                 "assets", "icons"
             )
             screen = CurrentWeatherScreen(
-                width=240,
-                height=280,
                 icon_dir=icon_dir,
-                temperature_unit=self.config.settings.temperature_unit
+                temperature_unit=self.config.settings.temperature_unit,
+                orientation=orientation
             )
             image = screen.render(
                 station=station,
@@ -116,8 +122,15 @@ class WeatherApp:
                 is_cached=False,
                 last_updated=self.last_fetch_time
             )
+            
+            # For landscape mode, rotate the image 90° before display
+            # The display is physically 240x280, so landscape renders at 280x240
+            # and must be rotated to fit
+            if orientation == "landscape" and Image is not None:
+                image = image.transpose(Image.Transpose.ROTATE_90)
+            
             self.display.show_image(image)
-            logger.debug(f"Displayed weather for {station.name}")
+            logger.debug(f"Displayed weather for {station.name} ({orientation} mode)")
         except Exception as e:
             logger.error(f"Failed to update display: {e}")
             # Try to show error screen

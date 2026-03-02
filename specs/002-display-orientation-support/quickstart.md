@@ -116,7 +116,9 @@ This may indicate a layout calculation issue. Check the logs for any warnings an
 
 | File | Purpose |
 |------|---------|
-| `src/config.py` | Loads orientation from config |
-| `src/app.py` | Passes orientation to display and screens |
-| `src/display.py` | Handles dimension swapping for landscape |
-| `src/ui/screens.py` | Renders layouts based on orientation |
+| `src/config.py` | Loads orientation from config with validation |
+| `src/app.py` | Passes orientation to screens and rotates image for landscape |
+| `src/display.py` | Handles display output (no orientation-specific changes) |
+| `src/ui/screens.py` | Renders layouts based on orientation using LayoutConfig |
+| `tests/unit/test_config.py` | Tests for orientation config parsing |
+| `tests/unit/test_screens.py` | Tests for orientation-aware screen rendering |

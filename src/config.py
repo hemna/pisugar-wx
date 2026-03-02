@@ -1,10 +1,15 @@
 """Configuration management for PiSugar Weather Display."""
 
 import json
+import logging
 import os
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import List, Optional
+
+logger = logging.getLogger(__name__)
+
+# Valid orientation values
+VALID_ORIENTATIONS = ("portrait", "landscape")
 
 
 @dataclass
@@ -27,6 +32,7 @@ class AppSettings:
     cycle_interval_seconds: int = 30
     temperature_unit: str = "F"
     display_brightness: int = 100
+    orientation: str = "portrait"
     user_agent: str = "pisugar-weather/0.1.0"
     cache_dir: str = "~/.cache/pisugar-weather"
 
@@ -78,11 +84,23 @@ def load_config(config_path: Optional[str] = None) -> AppConfig:
     ]
     
     settings_data = data.get("settings", {})
+    
+    # Parse orientation with validation and case-insensitivity
+    raw_orientation = settings_data.get("orientation", "portrait")
+    orientation = raw_orientation.lower() if isinstance(raw_orientation, str) else "portrait"
+    if orientation not in VALID_ORIENTATIONS:
+        logger.warning(
+            f"Invalid orientation '{raw_orientation}', defaulting to 'portrait'. "
+            f"Valid values: {VALID_ORIENTATIONS}"
+        )
+        orientation = "portrait"
+    
     settings = AppSettings(
         refresh_interval_minutes=settings_data.get("refresh_interval_minutes", 15),
         cycle_interval_seconds=settings_data.get("cycle_interval_seconds", 30),
         temperature_unit=settings_data.get("temperature_unit", "F"),
-        display_brightness=settings_data.get("display_brightness", 100)
+        display_brightness=settings_data.get("display_brightness", 100),
+        orientation=orientation
     )
     
     return AppConfig(
@@ -118,7 +136,8 @@ def save_config(config: AppConfig, config_path: str) -> None:
             "refresh_interval_minutes": config.settings.refresh_interval_minutes,
             "cycle_interval_seconds": config.settings.cycle_interval_seconds,
             "temperature_unit": config.settings.temperature_unit,
-            "display_brightness": config.settings.display_brightness
+            "display_brightness": config.settings.display_brightness,
+            "orientation": config.settings.orientation
         }
     }
     
