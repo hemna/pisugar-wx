@@ -3,9 +3,27 @@
   "stations": [
     {
       "id": "home",
-      "name": "Home",
+      "name": "Appomattox, VA",
       "latitude": 39.7456,
       "longitude": -97.0892
+    },
+    {
+      "id": "Dad",
+      "name": "Happy Camp, CA",
+      "latitude": 41.795675,
+      "longitude": -123.375623
+    },
+    {
+      "id": "Cool",
+      "name": "Cool, CA",
+      "latitude": 38.887423,
+      "longitude": -121.014738
+    },
+    {
+      "id": "Hotsprings",
+      "name": "Hot Springs, VA",
+      "latitude": 38.000897,
+      "longitude": -79.826303
     }
   ],
   "settings": {
@@ -13,6 +31,6 @@
     "cycle_interval_seconds": 30,
     "temperature_unit": "F",
     "display_brightness": 100,
-    "orientation": "portrait"
+    "orientation": "landscape"
   }
 }
