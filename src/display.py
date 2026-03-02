@@ -67,7 +67,6 @@ class Display:
             
             # WhisPlayBoard uses pygame to display
             import pygame
-            import io
             
             # Convert PIL image to pygame surface
             if image.mode != 'RGB':
