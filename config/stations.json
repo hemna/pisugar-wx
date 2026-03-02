@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "stations": [
+    {
+      "id": "home",
+      "name": "Home",
+      "latitude": 39.7456,
+      "longitude": -97.0892
+    }
+  ],
+  "settings": {
+    "refresh_interval_minutes": 15,
+    "cycle_interval_seconds": 30,
+    "temperature_unit": "F",
+    "display_brightness": 100
+  }
+}
