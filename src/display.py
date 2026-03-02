@@ -67,34 +67,31 @@ class Display:
         """Initialize the ST7789 display."""
         import time
         
-        # Whisplay GPIO pins from docs:
-        # SPI_RST = P7 (GPIO 4)
-        # SPI_DC = P13 (GPIO 27)
-        # SPI_CS = P24 (GPIO 8)
-        # SPI_MOSI = P19 (GPIO 10)
-        # SPI_CLK = P23 (GPIO 11)
+        # Whisplay GPIO pins (PHYSICAL/BOARD pin numbers from docs):
+        # SPI_RST = P7 (physical pin 7)
+        # SPI_DC = P13 (physical pin 13)
+        # LED = P15 (physical pin 15)
         
-        # First, manually control backlight to ensure display is lit
-        GPIO.setmode(GPIO.BCM)
+        GPIO.setmode(GPIO.BOARD)
         GPIO.setwarnings(False)
         
-        # Turn on backlight (LED1 is P22 = GPIO 25)
-        GPIO.setup(25, GPIO.OUT)
-        GPIO.output(25, GPIO.HIGH)
+        # Turn on backlight
+        GPIO.setup(15, GPIO.OUT)
+        GPIO.output(15, GPIO.HIGH)
         
-        # Reset the display (RST is P7 = GPIO 4)
-        GPIO.setup(4, GPIO.OUT)
-        GPIO.output(4, GPIO.LOW)
+        # Reset the display
+        GPIO.setup(7, GPIO.OUT)
+        GPIO.output(7, GPIO.LOW)
         time.sleep(0.1)
-        GPIO.output(4, GPIO.HIGH)
+        GPIO.output(7, GPIO.HIGH)
         time.sleep(0.2)
         
         try:
             self._display = ST7789.ST7789(
                 port=0,
-                cs=0,  # SPI_CS on GPIO 8
-                dc=27,  # SPI_DC on GPIO 27 (P13)
-                rst=4,   # SPI_RST on GPIO 4 (P7)
+                cs=0,   # SPI_CS on physical pin 24
+                dc=13,  # SPI_DC on physical pin 13
+                rst=7,   # SPI_RST on physical pin 7
                 width=self.width,
                 height=self.height,
                 rotation=self.rotation
