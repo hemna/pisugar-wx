@@ -65,19 +65,23 @@ class Display:
             if image.size != (self.width, self.height):
                 image = image.resize((self.width, self.height))
             
-            # WhisPlayBoard uses pygame to display
-            import pygame
-            
-            # Convert PIL image to pygame surface
+            # Convert PIL image to RGB565 format for WhisPlay
             if image.mode != 'RGB':
                 image = image.convert('RGB')
             
-            # Create pygame surface from string
-            img_str = image.tobytes()
-            surface = pygame.image.fromstring(img_str, image.size, 'RGB')
+            # Convert RGB to RGB565 (16-bit color)
+            pixels = list(image.getdata())
+            rgb565_data = []
+            for r, g, b in pixels:
+                # Convert 8-bit RGB to 5-6-5 RGB565
+                r5 = (r >> 3) & 0x1F
+                g6 = (g >> 2) & 0x3F
+                b5 = (b >> 3) & 0x1F
+                rgb565 = (r5 << 11) | (g6 << 5) | b5
+                rgb565_data.append(rgb565)
             
-            # Display
-            self._board.draw_image(surface, 0, 0)
+            # Display using WhisPlay
+            self._board.draw_image(0, 0, self.width, self.height, rgb565_data)
             logger.debug("Image displayed")
         except Exception as e:
             logger.error(f"Failed to show image: {e}")
