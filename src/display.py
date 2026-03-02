@@ -88,11 +88,15 @@ class Display:
             if image.mode != 'RGB':
                 image = image.convert('RGB')
             
+            logger.info(f"Displaying image size: {image.size}")
+            
             # Display the image
             self._display.display(image)
-            logger.debug("Image displayed")
+            logger.info("Image displayed successfully")
         except Exception as e:
+            import traceback
             logger.error(f"Failed to show image: {e}")
+            logger.error(traceback.format_exc())
     
     def clear(self) -> None:
         """Clear the display."""
