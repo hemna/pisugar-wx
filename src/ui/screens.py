@@ -189,22 +189,22 @@ class CurrentWeatherScreen(BaseScreen):
         temp_bbox = canvas.draw.textbbox((0, 0), temp_text, font=font_large)
         temp_width = temp_bbox[2] - temp_bbox[0]
         temp_x = (self.width - temp_width) // 2
-        canvas.text((temp_x, 75), temp_text, font=font_large, fill=temp_color)
+        canvas.text((temp_x, 95), temp_text, font=font_large, fill=temp_color)
         
         # Condition text (may be long, truncate if needed)
-        condition_y = 120
+        condition_y = 140
         condition_text = conditions.condition
         if len(condition_text) > 25:
             condition_text = condition_text[:22] + "..."
         canvas.centered_text(condition_y, condition_text, font_medium, TEXT_COLOR)
         
         # Humidity - use medium font for readability
-        humidity_y = 150
+        humidity_y = 170
         humidity_text = f"Humidity: {conditions.humidity}%"
         canvas.centered_text(humidity_y, humidity_text, font_medium, TEXT_SECONDARY)
         
         # Wind - use medium font for readability
-        wind_y = 175
+        wind_y = 195
         wind_text = f"Wind: {conditions.wind_speed} {conditions.wind_direction}"
         canvas.centered_text(wind_y, wind_text, font_medium, TEXT_SECONDARY)
         
