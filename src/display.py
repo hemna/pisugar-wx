@@ -3,6 +3,8 @@
 import logging
 from typing import Optional
 
+logger = logging.getLogger(__name__)
+
 try:
     import ST7789
     import RPi.GPIO as GPIO
@@ -10,9 +12,6 @@ try:
 except ImportError as e:
     DISPLAY_AVAILABLE = False
     logger.error(f"Display import failed: {e}")
-
-
-logger = logging.getLogger(__name__)
 
 
 class Display:
