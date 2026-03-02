@@ -42,11 +42,14 @@ class Display:
         if DISPLAY_AVAILABLE:
             try:
                 self._initialize_display()
+                logger.info("Display initialized successfully")
             except Exception as e:
                 logger.error(f"Failed to initialize display: {e}")
                 self._display = None
         else:
             logger.warning("Display libraries not available (not on Raspberry Pi)")
+        
+        logger.info(f"Display available: {self.is_available}")
     
     def _initialize_display(self) -> None:
         """Initialize the ST7789 display."""

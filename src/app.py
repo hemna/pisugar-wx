@@ -16,6 +16,7 @@ from src.display import Display, MockDisplay
 from src.weather.api import WeatherAPI
 from src.weather.cache import WeatherCacheManager
 from src.weather.models import CurrentConditions, Forecast
+from src.ui.screens import CurrentWeatherScreen, OfflineScreen, ErrorScreen
 
 # Configure logging
 logging.basicConfig(
@@ -44,6 +45,9 @@ class WeatherApp:
             self.display = MockDisplay()
         else:
             self.display = Display(brightness=config.settings.display_brightness)
+            if not self.display.is_available:
+                logger.warning("Display not available, using mock display")
+                self.display = MockDisplay()
         
         self.current_station_index = 0
         self.last_fetch_time: Optional[datetime] = None
@@ -76,8 +80,47 @@ class WeatherApp:
     
     def update_display(self) -> None:
         """Update display with current weather data."""
-        # Placeholder - will be implemented with screens
-        logger.debug("Updating display...")
+        if not self.config.stations:
+            return
+        
+        station = self.config.stations[self.current_station_index]
+        
+        # Check if we have weather data
+        if not self.current_weather:
+            # Show error or offline screen
+            offline_screen = OfflineScreen()
+            image = offline_screen.render()
+            self.display.show_image(image)
+            logger.debug("Showing offline screen")
+            return
+        
+        # Render current weather screen
+        try:
+            icon_dir = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                "assets", "icons"
+            )
+            screen = CurrentWeatherScreen(
+                icon_dir=icon_dir,
+                temperature_unit=self.config.settings.temperature_unit
+            )
+            image = screen.render(
+                station=station,
+                conditions=self.current_weather,
+                is_cached=False,
+                last_updated=self.last_fetch_time
+            )
+            self.display.show_image(image)
+            logger.debug(f"Displayed weather for {station.name}")
+        except Exception as e:
+            logger.error(f"Failed to update display: {e}")
+            # Try to show error screen
+            try:
+                error_screen = ErrorScreen()
+                image = error_screen.render(str(e)[:30], station.name)
+                self.display.show_image(image)
+            except:
+                pass
     
     def should_refresh(self) -> bool:
         """Check if weather data should be refreshed.
