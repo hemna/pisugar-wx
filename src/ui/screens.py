@@ -15,7 +15,7 @@ from .icons import get_icon_path
 logger = logging.getLogger(__name__)
 
 
-ICON_SIZE = 32
+ICON_SIZE = 48
 LAYOUT_PADDING = 8
 
 
@@ -49,6 +49,16 @@ class CurrentWeatherScreen(BaseScreen):
         self.icon_dir = icon_dir
         self.temperature_unit = temperature_unit
     
+    def _paste_with_alpha(self, canvas: DisplayCanvas, icon: Image.Image, position: tuple) -> None:
+        """Paste an RGBA image onto the canvas, handling transparency."""
+        if icon.mode == 'RGBA':
+            # Create a white background and composite the icon onto it
+            bg = Image.new('RGB', icon.size, WHITE)
+            bg.paste(icon, mask=icon.split()[3])  # Use alpha channel as mask
+            canvas.image.paste(bg, position)
+        else:
+            canvas.image.paste(icon, position)
+    
     def render(
         self,
         station: WeatherStation,
@@ -74,33 +84,32 @@ class CurrentWeatherScreen(BaseScreen):
         font_medium = self.font_loader.get_default_font()
         font_large = self.font_loader.get_large_font()
         
-        # Draw station name at top
-        canvas.text(
-            (LAYOUT_PADDING, LAYOUT_PADDING),
-            station.name,
-            font_small,
-            BLACK
-        )
+        # Draw station name centered at top
+        canvas.centered_text(LAYOUT_PADDING, station.name, font_medium, BLACK)
         
         # Draw weather icon (centered, below station name)
         icon_x = (self.width - ICON_SIZE) // 2
-        icon_y = 30
+        icon_y = 35
         
         icon_path = get_icon_path(self.icon_dir, conditions.condition)
-        logger.debug(f"Icon lookup: condition='{conditions.condition}', icon_dir='{self.icon_dir}', path='{icon_path}'")
+        logger.info(f"Icon lookup: condition='{conditions.condition}', path='{icon_path}', exists={icon_path and os.path.exists(icon_path)}")
         icon_loaded = False
         if icon_path and os.path.exists(icon_path):
             try:
                 icon_img = Image.open(icon_path)
+                # Convert to RGBA if not already, to handle transparency
+                if icon_img.mode != 'RGBA':
+                    icon_img = icon_img.convert('RGBA')
                 icon_img = icon_img.resize((ICON_SIZE, ICON_SIZE), Image.Resampling.LANCZOS)
-                canvas.image_at((icon_x, icon_y), icon_img)
+                # Paste with transparency mask
+                self._paste_with_alpha(canvas, icon_img, (icon_x, icon_y))
                 icon_loaded = True
-                logger.debug(f"Icon loaded successfully: {icon_path}")
+                logger.info(f"Icon loaded successfully: {icon_path}")
             except Exception as e:
                 logger.warning(f"Failed to load icon: {e}")
                 icon_loaded = False
         else:
-            logger.debug(f"Icon not found: icon_dir exists={os.path.exists(self.icon_dir)}")
+            logger.warning(f"Icon not found: icon_dir={self.icon_dir}, exists={os.path.exists(self.icon_dir)}")
         
         if not icon_loaded:
             # Draw placeholder rectangle if icon not found or failed to load
@@ -114,24 +123,24 @@ class CurrentWeatherScreen(BaseScreen):
         temp_bbox = canvas.draw.textbbox((0, 0), temp_text, font=font_large)
         temp_width = temp_bbox[2] - temp_bbox[0]
         temp_x = (self.width - temp_width) // 2
-        canvas.text((temp_x, 70), temp_text, font=font_large, fill=BLACK)
+        canvas.text((temp_x, 75), temp_text, font=font_large, fill=BLACK)
         
         # Condition text (may be long, truncate if needed)
-        condition_y = 115
+        condition_y = 120
         condition_text = conditions.condition
         if len(condition_text) > 25:
             condition_text = condition_text[:22] + "..."
         canvas.centered_text(condition_y, condition_text, font_medium, BLACK)
         
-        # Humidity
-        humidity_y = 145
+        # Humidity - use medium font for readability
+        humidity_y = 150
         humidity_text = f"Humidity: {conditions.humidity}%"
-        canvas.centered_text(humidity_y, humidity_text, font_small, GRAY)
+        canvas.centered_text(humidity_y, humidity_text, font_medium, GRAY)
         
-        # Wind
-        wind_y = 165
+        # Wind - use medium font for readability
+        wind_y = 175
         wind_text = f"Wind: {conditions.wind_speed} {conditions.wind_direction}"
-        canvas.centered_text(wind_y, wind_text, font_small, GRAY)
+        canvas.centered_text(wind_y, wind_text, font_medium, GRAY)
         
         # Footer - Last updated or cached indicator
         if is_cached:
