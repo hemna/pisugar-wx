@@ -5,9 +5,9 @@ import os
 import sys
 
 # Add WhisPlay driver to path
-whisplay_path = os.path.expanduser("~/Whisplay/Driver")
-if os.path.exists(whisplay_path):
-    sys.path.insert(0, whistplay_path)
+whisplay_driver_path = os.path.expanduser("~/Whisplay/Driver")
+if os.path.exists(whisplay_driver_path):
+    sys.path.insert(0, whisplay_driver_path)
 
 logger = logging.getLogger(__name__)
 
