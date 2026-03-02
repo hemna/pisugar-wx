@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from ..weather.models import CurrentConditions, Forecast
 from ..config import WeatherStation
-from .elements import DisplayCanvas, WHITE, BLACK, BLUE, GRAY
+from .elements import DisplayCanvas, WHITE, BLACK, BLUE, GRAY, LIGHT_GRAY
 from .fonts import FontLoader
 from .icons import get_icon_path
 
@@ -17,6 +17,11 @@ logger = logging.getLogger(__name__)
 
 ICON_SIZE = 48
 LAYOUT_PADDING = 8
+
+# Dark theme colors
+BG_COLOR = BLACK
+TEXT_COLOR = WHITE
+TEXT_SECONDARY = LIGHT_GRAY
 
 
 class BaseScreen:
@@ -27,7 +32,7 @@ class BaseScreen:
         self.height = height
         self.font_loader = FontLoader()
     
-    def create_canvas(self, background=WHITE) -> DisplayCanvas:
+    def create_canvas(self, background=BG_COLOR) -> DisplayCanvas:
         return DisplayCanvas(self.width, self.height, background)
     
     def render(self) -> Image.Image:
@@ -52,8 +57,8 @@ class CurrentWeatherScreen(BaseScreen):
     def _paste_with_alpha(self, canvas: DisplayCanvas, icon: Image.Image, position: tuple) -> None:
         """Paste an RGBA image onto the canvas, handling transparency."""
         if icon.mode == 'RGBA':
-            # Create a white background and composite the icon onto it
-            bg = Image.new('RGB', icon.size, WHITE)
+            # Create a black background and composite the icon onto it
+            bg = Image.new('RGB', icon.size, BG_COLOR)
             bg.paste(icon, mask=icon.split()[3])  # Use alpha channel as mask
             canvas.image.paste(bg, position)
         else:
@@ -85,7 +90,7 @@ class CurrentWeatherScreen(BaseScreen):
         font_large = self.font_loader.get_large_font()
         
         # Draw station name centered at top
-        canvas.centered_text(LAYOUT_PADDING, station.name, font_medium, BLACK)
+        canvas.centered_text(LAYOUT_PADDING, station.name, font_medium, TEXT_COLOR)
         
         # Draw weather icon (centered, below station name)
         icon_x = (self.width - ICON_SIZE) // 2
@@ -115,7 +120,7 @@ class CurrentWeatherScreen(BaseScreen):
             # Draw placeholder rectangle if icon not found or failed to load
             canvas.rectangle(
                 (icon_x, icon_y, icon_x + ICON_SIZE, icon_y + ICON_SIZE),
-                outline=GRAY
+                outline=TEXT_SECONDARY
             )
         
         # Temperature (large, centered below icon)
@@ -123,24 +128,24 @@ class CurrentWeatherScreen(BaseScreen):
         temp_bbox = canvas.draw.textbbox((0, 0), temp_text, font=font_large)
         temp_width = temp_bbox[2] - temp_bbox[0]
         temp_x = (self.width - temp_width) // 2
-        canvas.text((temp_x, 75), temp_text, font=font_large, fill=BLACK)
+        canvas.text((temp_x, 75), temp_text, font=font_large, fill=TEXT_COLOR)
         
         # Condition text (may be long, truncate if needed)
         condition_y = 120
         condition_text = conditions.condition
         if len(condition_text) > 25:
             condition_text = condition_text[:22] + "..."
-        canvas.centered_text(condition_y, condition_text, font_medium, BLACK)
+        canvas.centered_text(condition_y, condition_text, font_medium, TEXT_COLOR)
         
         # Humidity - use medium font for readability
         humidity_y = 150
         humidity_text = f"Humidity: {conditions.humidity}%"
-        canvas.centered_text(humidity_y, humidity_text, font_medium, GRAY)
+        canvas.centered_text(humidity_y, humidity_text, font_medium, TEXT_SECONDARY)
         
         # Wind - use medium font for readability
         wind_y = 175
         wind_text = f"Wind: {conditions.wind_speed} {conditions.wind_direction}"
-        canvas.centered_text(wind_y, wind_text, font_medium, GRAY)
+        canvas.centered_text(wind_y, wind_text, font_medium, TEXT_SECONDARY)
         
         # Footer - Last updated or cached indicator
         if is_cached:
@@ -151,7 +156,7 @@ class CurrentWeatherScreen(BaseScreen):
             footer_text = ""
         
         if footer_text:
-            canvas.centered_text(self.height - 15, footer_text, font_small, GRAY)
+            canvas.centered_text(self.height - 15, footer_text, font_small, TEXT_SECONDARY)
         
         return canvas.get_image()
 
