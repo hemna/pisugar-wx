@@ -54,31 +54,44 @@ class Display:
     def _initialize_display(self) -> None:
         """Initialize the ST7789 display."""
         import time
+        
+        # First, manually control backlight to ensure display is lit
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
+        GPIO.setup(18, GPIO.OUT)
+        GPIO.output(18, GPIO.HIGH)  # Turn on backlight
         
         # Reset the display
         GPIO.setup(27, GPIO.OUT)
         GPIO.output(27, GPIO.LOW)
         time.sleep(0.1)
         GPIO.output(27, GPIO.HIGH)
-        time.sleep(0.1)
+        time.sleep(0.2)
         
-        self._display = ST7789.ST7789(
-            port=0,
-            cs=0,
-            dc=25,
-            rst=27,
-            width=self.width,
-            height=self.height,
-            rotation=self.rotation
-        )
-        
-        # Turn on backlight
-        GPIO.setup(18, GPIO.OUT)
-        GPIO.output(18, GPIO.HIGH)
-        
-        logger.info("Display initialized successfully")
+        try:
+            self._display = ST7789.ST7789(
+                port=0,
+                cs=0,
+                dc=25,
+                rst=27,
+                width=self.width,
+                height=self.height,
+                rotation=self.rotation
+            )
+            logger.info("Display initialized successfully")
+        except Exception as e:
+            logger.error(f"ST7789 init failed: {e}")
+            # Try without reset pin
+            self._display = ST7789.ST7789(
+                port=0,
+                cs=0,
+                dc=25,
+                rst=None,
+                width=self.width,
+                height=self.height,
+                rotation=self.rotation
+            )
+            logger.info("Display initialized (no reset)")
     
     def show_image(self, image) -> None:
         """Display an image on the screen.
