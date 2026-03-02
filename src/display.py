@@ -77,7 +77,7 @@ class Display:
             surface = pygame.image.fromstring(img_str, image.size, 'RGB')
             
             # Display
-            self._board.show_image(surface)
+            self._board.draw_image(surface, 0, 0)
             logger.debug("Image displayed")
         except Exception as e:
             logger.error(f"Failed to show image: {e}")
