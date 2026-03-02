@@ -1,5 +1,6 @@
 """Display screens for weather information."""
 
+import logging
 import os
 from typing import Optional
 
@@ -11,15 +12,17 @@ from .elements import DisplayCanvas, WHITE, BLACK, BLUE, GRAY
 from .fonts import FontLoader
 from .icons import get_icon_path
 
+logger = logging.getLogger(__name__)
 
-ICON_SIZE = 48
-LAYOUT_PADDING = 10
+
+ICON_SIZE = 32
+LAYOUT_PADDING = 8
 
 
 class BaseScreen:
     """Base class for display screens."""
     
-    def __init__(self, width: int = 280, height: int = 240):
+    def __init__(self, width: int = 240, height: int = 280):
         self.width = width
         self.height = height
         self.font_loader = FontLoader()
@@ -37,8 +40,8 @@ class CurrentWeatherScreen(BaseScreen):
     
     def __init__(
         self,
-        width: int = 280,
-        height: int = 240,
+        width: int = 240,
+        height: int = 280,
         icon_dir: str = "assets/icons",
         temperature_unit: str = "F"
     ):
@@ -71,7 +74,7 @@ class CurrentWeatherScreen(BaseScreen):
         font_medium = self.font_loader.get_default_font()
         font_large = self.font_loader.get_large_font()
         
-        # Draw station name
+        # Draw station name at top
         canvas.text(
             (LAYOUT_PADDING, LAYOUT_PADDING),
             station.name,
@@ -79,11 +82,12 @@ class CurrentWeatherScreen(BaseScreen):
             BLACK
         )
         
-        # Draw weather icon (top right area)
-        icon_x = self.width - ICON_SIZE - LAYOUT_PADDING
-        icon_y = LAYOUT_PADDING
+        # Draw weather icon (centered, below station name)
+        icon_x = (self.width - ICON_SIZE) // 2
+        icon_y = 30
         
         icon_path = get_icon_path(self.icon_dir, conditions.condition)
+        logger.debug(f"Icon lookup: condition='{conditions.condition}', icon_dir='{self.icon_dir}', path='{icon_path}'")
         icon_loaded = False
         if icon_path and os.path.exists(icon_path):
             try:
@@ -91,8 +95,12 @@ class CurrentWeatherScreen(BaseScreen):
                 icon_img = icon_img.resize((ICON_SIZE, ICON_SIZE), Image.Resampling.LANCZOS)
                 canvas.image_at((icon_x, icon_y), icon_img)
                 icon_loaded = True
-            except Exception:
+                logger.debug(f"Icon loaded successfully: {icon_path}")
+            except Exception as e:
+                logger.warning(f"Failed to load icon: {e}")
                 icon_loaded = False
+        else:
+            logger.debug(f"Icon not found: icon_dir exists={os.path.exists(self.icon_dir)}")
         
         if not icon_loaded:
             # Draw placeholder rectangle if icon not found or failed to load
@@ -101,24 +109,27 @@ class CurrentWeatherScreen(BaseScreen):
                 outline=GRAY
             )
         
-        # Temperature (large, centered)
+        # Temperature (large, centered below icon)
         temp_text = f"{int(conditions.temperature)}°{self.temperature_unit}"
         temp_bbox = canvas.draw.textbbox((0, 0), temp_text, font=font_large)
         temp_width = temp_bbox[2] - temp_bbox[0]
         temp_x = (self.width - temp_width) // 2
-        canvas.text((temp_x, 50), temp_text, font=font_large, fill=BLACK)
+        canvas.text((temp_x, 70), temp_text, font=font_large, fill=BLACK)
         
-        # Condition text
-        condition_y = 110
-        canvas.centered_text(condition_y, conditions.condition, font_medium, BLACK)
+        # Condition text (may be long, truncate if needed)
+        condition_y = 115
+        condition_text = conditions.condition
+        if len(condition_text) > 25:
+            condition_text = condition_text[:22] + "..."
+        canvas.centered_text(condition_y, condition_text, font_medium, BLACK)
         
         # Humidity
-        humidity_y = 140
+        humidity_y = 145
         humidity_text = f"Humidity: {conditions.humidity}%"
         canvas.centered_text(humidity_y, humidity_text, font_small, GRAY)
         
         # Wind
-        wind_y = 160
+        wind_y = 165
         wind_text = f"Wind: {conditions.wind_speed} {conditions.wind_direction}"
         canvas.centered_text(wind_y, wind_text, font_small, GRAY)
         
@@ -131,7 +142,7 @@ class CurrentWeatherScreen(BaseScreen):
             footer_text = ""
         
         if footer_text:
-            canvas.centered_text(self.height - 20, footer_text, font_small, GRAY)
+            canvas.centered_text(self.height - 15, footer_text, font_small, GRAY)
         
         return canvas.get_image()
 
@@ -141,8 +152,8 @@ class ForecastScreen(BaseScreen):
     
     def __init__(
         self,
-        width: int = 280,
-        height: int = 240,
+        width: int = 240,
+        height: int = 280,
         icon_dir: str = "assets/icons",
         temperature_unit: str = "F"
     ):
@@ -230,7 +241,7 @@ class ForecastScreen(BaseScreen):
 class ErrorScreen(BaseScreen):
     """Screen displaying error messages."""
     
-    def __init__(self, width: int = 280, height: int = 240):
+    def __init__(self, width: int = 240, height: int = 280):
         super().__init__(width, height)
     
     def render(self, message: str, station_name: str = "") -> Image.Image:
@@ -264,7 +275,7 @@ class ErrorScreen(BaseScreen):
 class OfflineScreen(BaseScreen):
     """Screen displaying offline status."""
     
-    def __init__(self, width: int = 280, height: int = 240):
+    def __init__(self, width: int = 240, height: int = 280):
         super().__init__(width, height)
     
     def render(self, last_updated=None) -> Image.Image:

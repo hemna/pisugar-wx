@@ -6,9 +6,9 @@ from typing import Optional
 from PIL import ImageFont
 
 
-DEFAULT_FONT_SIZE = 24
-LARGE_FONT_SIZE = 48
-SMALL_FONT_SIZE = 16
+DEFAULT_FONT_SIZE = 16
+LARGE_FONT_SIZE = 36
+SMALL_FONT_SIZE = 12
 
 
 class FontLoader:
