@@ -105,17 +105,29 @@ class Display:
             return
         
         try:
+            from PIL import Image
+            
             # Convert image to RGB if needed
             if image.mode != 'RGB':
                 image = image.convert('RGB')
             
             logger.info(f"Displaying image size: {image.size}")
             
-            # Try to force display on
-            # Display the image multiple times to ensure it shows
-            for i in range(3):
-                self._display.display(image)
-                time.sleep(0.1)
+            # First, show a solid color test
+            solid_color = Image.new('RGB', (self.width, self.height), (255, 0, 0))  # Red
+            self._display.display(solid_color)
+            time.sleep(1)
+            
+            solid_color = Image.new('RGB', (self.width, self.height), (0, 255, 0))  # Green
+            self._display.display(solid_color)
+            time.sleep(1)
+            
+            solid_color = Image.new('RGB', (self.width, self.height), (0, 0, 255))  # Blue
+            self._display.display(solid_color)
+            time.sleep(1)
+            
+            # Now show the actual image
+            self._display.display(image)
             
             logger.info("Image displayed successfully")
         except Exception as e:
