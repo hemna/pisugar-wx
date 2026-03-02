@@ -108,6 +108,10 @@ class Display:
             if image.mode != 'RGB':
                 image = image.convert('RGB')
             
+            # Try inverting colors (common ST7789 issue)
+            from PIL import ImageOps
+            image = ImageOps.invert(image)
+            
             logger.info(f"Displaying image size: {image.size}")
             
             # Display the image
