@@ -141,11 +141,11 @@ class CurrentWeatherScreen(BaseScreen):
             width=280,
             height=240,
             station_name_y=LAYOUT_PADDING,
-            icon_x=26,  # left section center=50
+            icon_x=46,  # left section center=70
             icon_y=35,
-            temp_x=50,  # under icon (left section center)
+            temp_x=70,  # under icon (left section center)
             temp_y=90,  # below icon
-            compass_x=230,  # right section
+            compass_x=210,  # right section (moved left a bit for balance)
             compass_y=70,
             compass_size=50,
             condition_y=145,  # full width, below the three sections
