@@ -54,6 +54,49 @@ class CurrentWeatherScreen(BaseScreen):
         self.icon_dir = icon_dir
         self.temperature_unit = temperature_unit
     
+    def _get_temp_color(self, temp: float) -> tuple:
+        """Get color for temperature display (blue for cold, red for hot).
+        
+        Args:
+            temp: Temperature in Fahrenheit
+            
+        Returns:
+            RGB color tuple
+        """
+        # Define temperature range (in Fahrenheit)
+        cold_temp = 20   # Blue
+        hot_temp = 100   # Red
+        
+        # Clamp temperature to range
+        t = max(cold_temp, min(hot_temp, temp))
+        
+        # Normalize to 0-1 range
+        ratio = (t - cold_temp) / (hot_temp - cold_temp)
+        
+        # Gradient from blue (cold) -> cyan -> green -> yellow -> red (hot)
+        if ratio < 0.25:
+            # Blue to Cyan (0 - 0.25)
+            r = 0
+            g = int(255 * (ratio / 0.25))
+            b = 255
+        elif ratio < 0.5:
+            # Cyan to Green (0.25 - 0.5)
+            r = 0
+            g = 255
+            b = int(255 * (1 - (ratio - 0.25) / 0.25))
+        elif ratio < 0.75:
+            # Green to Yellow (0.5 - 0.75)
+            r = int(255 * ((ratio - 0.5) / 0.25))
+            g = 255
+            b = 0
+        else:
+            # Yellow to Red (0.75 - 1.0)
+            r = 255
+            g = int(255 * (1 - (ratio - 0.75) / 0.25))
+            b = 0
+        
+        return (r, g, b)
+    
     def _invert_icon(self, icon: Image.Image) -> Image.Image:
         """Invert icon colors for dark theme (keep alpha channel)."""
         from PIL import ImageOps
@@ -140,12 +183,13 @@ class CurrentWeatherScreen(BaseScreen):
                 outline=TEXT_SECONDARY
             )
         
-        # Temperature (large, centered below icon)
+        # Temperature (large, centered below icon) with color based on temp
+        temp_color = self._get_temp_color(conditions.temperature)
         temp_text = f"{int(conditions.temperature)}°{self.temperature_unit}"
         temp_bbox = canvas.draw.textbbox((0, 0), temp_text, font=font_large)
         temp_width = temp_bbox[2] - temp_bbox[0]
         temp_x = (self.width - temp_width) // 2
-        canvas.text((temp_x, 75), temp_text, font=font_large, fill=TEXT_COLOR)
+        canvas.text((temp_x, 75), temp_text, font=font_large, fill=temp_color)
         
         # Condition text (may be long, truncate if needed)
         condition_y = 120
