@@ -67,8 +67,9 @@ class Display:
             rotation=self.rotation
         )
         
-        self._display.Setup()
-        self._display.SetBacklight(self.brightness / 100.0)
+        # Set backlight brightness (0.0 to 1.0)
+        if hasattr(self._display, 'set_backlight'):
+            self._display.set_backlight(self.brightness / 100.0)
         
         logger.info("Display initialized successfully")
     
@@ -83,7 +84,7 @@ class Display:
             return
         
         try:
-            self._display.ShowImage(image)
+            self._display.display(image)
         except Exception as e:
             logger.error(f"Failed to show image: {e}")
     
