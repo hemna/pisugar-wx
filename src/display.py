@@ -1,33 +1,26 @@
-"""Display driver for ST7789-based displays."""
+"""Display driver for PiSugar Whisplay HAT using WhisPlayBoard."""
 
 import logging
-import time
-from typing import Optional
+import os
+import sys
+
+# Add WhisPlay driver to path
+whisplay_path = os.path.expanduser("~/Whisplay/Driver")
+if os.path.exists(whisplay_path):
+    sys.path.insert(0, whistplay_path)
 
 logger = logging.getLogger(__name__)
 
 try:
-    import ST7789
-    import RPi.GPIO as GPIO
-    DISPLAY_AVAILABLE = True
+    from WhisPlay import WhisPlayBoard
+    WHISPLAY_AVAILABLE = True
 except ImportError as e:
-    DISPLAY_AVAILABLE = False
-    logger.error(f"Display import failed: {e}")
-
-try:
-    import ST7789
-    try:
-        import lgpio as GPIO
-    except ImportError:
-        import RPi.GPIO as GPIO
-    DISPLAY_AVAILABLE = True
-except ImportError as e:
-    DISPLAY_AVAILABLE = False
-    logger.error(f"Display import failed: {e}")
+    WHISPLAY_AVAILABLE = False
+    logger.error(f"WhisPlay import failed: {e}")
 
 
 class Display:
-    """ST7789 display controller for PiSugar Whisplay HAT."""
+    """WhisPlay display controller for PiSugar Whisplay HAT."""
     
     def __init__(
         self,
@@ -36,70 +29,26 @@ class Display:
         rotation: int = 0,
         brightness: int = 100
     ):
-        """Initialize display.
-        
-        Args:
-            width: Display width in pixels.
-            height: Display height in pixels.
-            rotation: Display rotation (0, 90, 180, 270).
-            brightness: Display brightness (0-100).
-        """
         self.width = width
         self.height = height
         self.rotation = rotation
         self.brightness = brightness
-        self._display = None
-        self._image = None
+        self._board = None
         
-        if DISPLAY_AVAILABLE:
+        if WHISPLAY_AVAILABLE:
             try:
                 self._initialize_display()
-                logger.info("Display initialized successfully")
             except Exception as e:
                 logger.error(f"Failed to initialize display: {e}")
-                self._display = None
+                self._board = None
         else:
-            logger.warning("Display libraries not available (not on Raspberry Pi)")
-        
-        logger.info(f"Display available: {self.is_available}")
+            logger.warning("WhisPlay library not available")
     
     def _initialize_display(self) -> None:
-        """Initialize the ST7789 display."""
-        import time
-        
-        # Whisplay GPIO pins (PHYSICAL/BOARD pin numbers from docs):
-        # SPI_RST = P7 (physical pin 7)
-        # SPI_DC = P13 (physical pin 13)
-        # LED = P15 (physical pin 15)
-        
-        GPIO.setmode(GPIO.BOARD)
-        GPIO.setwarnings(False)
-        
-        # Turn on backlight
-        GPIO.setup(15, GPIO.OUT)
-        GPIO.output(15, GPIO.HIGH)
-        
-        # Reset the display
-        GPIO.setup(7, GPIO.OUT)
-        GPIO.output(7, GPIO.LOW)
-        time.sleep(0.1)
-        GPIO.output(7, GPIO.HIGH)
-        time.sleep(0.2)
-        
-        try:
-            self._display = ST7789.ST7789(
-                port=0,
-                cs=0,   # SPI_CS on physical pin 24
-                dc=13,  # SPI_DC on physical pin 13
-                rst=7,   # SPI_RST on physical pin 7
-                width=self.width,
-                height=self.height,
-                rotation=self.rotation
-            )
-            logger.info("Display initialized successfully")
-        except Exception as e:
-            logger.error(f"ST7789 init failed: {e}")
-            raise
+        """Initialize the WhisPlay display."""
+        self._board = WhisPlayBoard()
+        self._board.set_backlight(self.brightness)
+        logger.info("Display initialized successfully")
     
     def show_image(self, image) -> None:
         """Display an image on the screen.
@@ -107,35 +56,37 @@ class Display:
         Args:
             image: PIL Image to display.
         """
-        if self._display is None:
+        if self._board is None:
             logger.warning("Display not available")
             return
         
         try:
-            from PIL import Image
+            # Resize image to display size if needed
+            if image.size != (self.width, self.height):
+                image = image.resize((self.width, self.height))
             
-            # Convert image to RGB if needed
+            # WhisPlayBoard uses pygame to display
+            import pygame
+            import io
+            
+            # Convert PIL image to pygame surface
             if image.mode != 'RGB':
                 image = image.convert('RGB')
             
-            logger.info(f"Displaying image size: {image.size}")
+            # Create pygame surface from string
+            img_str = image.tobytes()
+            surface = pygame.image.fromstring(img_str, image.size, 'RGB')
             
-            # Display the image
-            self._display.display(image)
-            
-            logger.info("Image displayed successfully")
+            # Display
+            self._board.show_image(surface)
+            logger.debug("Image displayed")
         except Exception as e:
-            import traceback
             logger.error(f"Failed to show image: {e}")
-            logger.error(traceback.format_exc())
     
     def clear(self) -> None:
         """Clear the display."""
-        if self._display is None:
-            return
-        
-        # Will be implemented with PIL Image
-        pass
+        if self._board:
+            self._board.fill_screen(0)
     
     def set_brightness(self, brightness: int) -> None:
         """Set display brightness.
@@ -145,40 +96,33 @@ class Display:
         """
         self.brightness = max(0, min(100, brightness))
         
-        if self._display:
-            self._display.SetBacklight(self.brightness / 100.0)
+        if self._board:
+            self._board.set_backlight(self.brightness)
     
     @property
     def is_available(self) -> bool:
         """Check if display is available."""
-        return self._display is not None
+        return self._board is not None
 
 
 class MockDisplay:
     """Mock display for testing without hardware."""
     
-    def __init__(self, width: int = 280, height: int = 240):
+    def __init__(self, width: int = 240, height: int = 280):
         self.width = width
         self.height = height
         self.brightness = 100
-        self._last_image = None
         logger.info("Mock display initialized")
     
     def show_image(self, image) -> None:
-        """Store image for testing verification."""
-        self._last_image = image
         logger.debug("Mock display: image received")
     
     def clear(self) -> None:
-        self._last_image = None
+        pass
     
     def set_brightness(self, brightness: int) -> None:
-        self.brightness = max(0, min(100, brightness))
+        self.brightness = brightness
     
     @property
     def is_available(self) -> bool:
         return True
-    
-    @property
-    def last_image(self):
-        return self._last_image
