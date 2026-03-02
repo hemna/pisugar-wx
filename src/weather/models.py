@@ -20,6 +20,8 @@ class CurrentConditions:
     feels_like: float = 0.0
     visibility: Optional[str] = None
     pressure: Optional[str] = None
+    dewpoint: Optional[float] = None  # Fahrenheit
+    dewpoint_celsius: Optional[float] = None
 
 
 @dataclass

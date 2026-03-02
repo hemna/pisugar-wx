@@ -407,9 +407,13 @@ class CurrentWeatherScreen(BaseScreen):
         if not self._load_icon(canvas, conditions, layout.icon_x, layout.icon_y):
             self._draw_icon_placeholder(canvas, layout.icon_x, layout.icon_y)
         
-        # Center section: Temperature
+        # Temperature / Dewpoint (under icon)
         temp_color = self._get_temp_color(conditions.temperature)
-        temp_text = f"{int(conditions.temperature)}°{self.temperature_unit}"
+        if conditions.dewpoint is not None:
+            # Show "Temp / Dewpoint" format
+            temp_text = f"{int(conditions.temperature)}°/{int(conditions.dewpoint)}°"
+        else:
+            temp_text = f"{int(conditions.temperature)}°{self.temperature_unit}"
         temp_bbox = canvas.draw.textbbox((0, 0), temp_text, font=font_large)
         temp_width = temp_bbox[2] - temp_bbox[0]
         temp_x = layout.temp_x - temp_width // 2
@@ -535,9 +539,12 @@ class CurrentWeatherScreen(BaseScreen):
         if not self._load_icon(canvas, conditions, layout.icon_x, layout.icon_y):
             self._draw_icon_placeholder(canvas, layout.icon_x, layout.icon_y)
         
-        # Temperature with color based on temp
+        # Temperature / Dewpoint with color based on temp
         temp_color = self._get_temp_color(conditions.temperature)
-        temp_text = f"{int(conditions.temperature)}°{self.temperature_unit}"
+        if conditions.dewpoint is not None:
+            temp_text = f"{int(conditions.temperature)}°/{int(conditions.dewpoint)}°"
+        else:
+            temp_text = f"{int(conditions.temperature)}°{self.temperature_unit}"
         temp_bbox = canvas.draw.textbbox((0, 0), temp_text, font=font_large)
         temp_width = temp_bbox[2] - temp_bbox[0]
         temp_x = layout.temp_x - temp_width // 2

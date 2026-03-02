@@ -124,6 +124,7 @@ class WeatherAPI:
             
             # Temperature is in Celsius from observations
             temp_c = get_value(properties.get("temperature"))
+            dewpoint_c = get_value(properties.get("dewpoint"))
             humidity = get_value(properties.get("relativeHumidity"))
             pressure_pa = get_value(properties.get("barometricPressure"))
             wind_speed_ms = get_value(properties.get("windSpeed"))  # m/s
@@ -135,6 +136,10 @@ class WeatherAPI:
             temp_f = None
             if temp_c is not None:
                 temp_f = temp_c * 9/5 + 32
+            
+            dewpoint_f = None
+            if dewpoint_c is not None:
+                dewpoint_f = dewpoint_c * 9/5 + 32
             
             pressure_inhg = None
             if pressure_pa is not None:
@@ -155,6 +160,8 @@ class WeatherAPI:
             return {
                 "temperature_f": temp_f,
                 "temperature_c": temp_c,
+                "dewpoint_f": dewpoint_f,
+                "dewpoint_c": dewpoint_c,
                 "humidity": int(humidity) if humidity is not None else None,
                 "pressure_inhg": pressure_inhg,
                 "pressure_pa": pressure_pa,
@@ -261,6 +268,8 @@ class WeatherAPI:
                     if observation and observation.get("temperature_f") is not None:
                         temp = observation["temperature_f"]
                         temp_c = observation["temperature_c"]
+                        dewpoint_f = observation.get("dewpoint_f")
+                        dewpoint_c = observation.get("dewpoint_c")
                         humidity = observation.get("humidity") or 50
                         wind_speed = f"{int(observation['wind_speed_mph'])} mph" if observation.get("wind_speed_mph") else forecast.wind_speed
                         wind_dir = observation.get("wind_direction") or forecast.wind_direction
@@ -269,6 +278,8 @@ class WeatherAPI:
                     else:
                         temp = forecast.temperature
                         temp_c = fahrenheit_to_celsius(temp)
+                        dewpoint_f = None
+                        dewpoint_c = None
                         humidity = 50
                         wind_speed = forecast.wind_speed
                         wind_dir = forecast.wind_direction
@@ -285,7 +296,9 @@ class WeatherAPI:
                         wind_direction=wind_dir,
                         condition=condition,
                         feels_like=temp,  # Simplified
-                        pressure=pressure
+                        pressure=pressure,
+                        dewpoint=dewpoint_f,
+                        dewpoint_celsius=dewpoint_c
                     )
                 
                 forecasts.append(forecast)
