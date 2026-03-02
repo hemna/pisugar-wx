@@ -155,7 +155,7 @@ class CurrentWeatherScreen(BaseScreen):
         icon_y = 35
         
         icon_path = get_icon_path(self.icon_dir, conditions.condition)
-        logger.info(f"Icon lookup: condition='{conditions.condition}', path='{icon_path}', exists={icon_path and os.path.exists(icon_path)}")
+        logger.debug(f"Icon lookup: condition='{conditions.condition}', path='{icon_path}', exists={icon_path and os.path.exists(icon_path)}")
         icon_loaded = False
         if icon_path and os.path.exists(icon_path):
             try:
@@ -169,7 +169,7 @@ class CurrentWeatherScreen(BaseScreen):
                 # Paste with transparency mask
                 self._paste_with_alpha(canvas, icon_img, (icon_x, icon_y))
                 icon_loaded = True
-                logger.info(f"Icon loaded successfully: {icon_path}")
+                logger.debug(f"Icon loaded successfully: {icon_path}")
             except Exception as e:
                 logger.warning(f"Failed to load icon: {e}")
                 icon_loaded = False
