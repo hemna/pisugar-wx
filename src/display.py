@@ -19,9 +19,9 @@ class Display:
     
     def __init__(
         self,
-        width: int = 280,
-        height: int = 240,
-        rotation: int = 90,
+        width: int = 240,
+        height: int = 280,
+        rotation: int = 0,
         brightness: int = 100
     ):
         """Initialize display.

@@ -101,6 +101,8 @@ class WeatherApp:
                 "assets", "icons"
             )
             screen = CurrentWeatherScreen(
+                width=240,
+                height=280,
                 icon_dir=icon_dir,
                 temperature_unit=self.config.settings.temperature_unit
             )
