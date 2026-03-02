@@ -304,29 +304,18 @@ class CurrentWeatherScreen(BaseScreen):
         canvas.centered_text(condition_y, condition_text, font_medium, TEXT_COLOR)
         
         # Humidity - use medium font for readability
-        humidity_y = 170
+        humidity_y = 165
         humidity_text = f"Humidity: {conditions.humidity}%"
         canvas.centered_text(humidity_y, humidity_text, font_medium, TEXT_SECONDARY)
         
         # Wind compass rose with direction indicator
-        compass_size = 50
+        compass_size = 40
         compass_x = self.width // 2
-        compass_y = 215
+        compass_y = 218
         self._draw_wind_compass(
             canvas, compass_x, compass_y, compass_size,
             conditions.wind_direction, conditions.wind_speed
         )
-        
-        # Footer - Last updated or cached indicator
-        if is_cached:
-            footer_text = "Cached Data"
-        elif last_updated:
-            footer_text = f"Updated: {last_updated.strftime('%H:%M')}"
-        else:
-            footer_text = ""
-        
-        if footer_text:
-            canvas.centered_text(self.height - 15, footer_text, font_small, TEXT_SECONDARY)
         
         return canvas.get_image()
 
