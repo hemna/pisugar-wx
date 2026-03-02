@@ -4,9 +4,9 @@ After=network.target
 
 [Service]
 Type=simple
-User=pi
-WorkingDirectory=/home/pi/pisugar-wx
-ExecStart=/home/pi/pisugar-wx/venv/bin/python -m src.app
+User=waboring
+WorkingDirectory=/home/waboring/pisugar-wx
+ExecStart=/home/waboring/pisugar-wx/venv/bin/python -m src.app
 Restart=always
 RestartSec=10
 StandardOutput=journal
