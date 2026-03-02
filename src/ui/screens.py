@@ -97,6 +97,103 @@ class CurrentWeatherScreen(BaseScreen):
         
         return (r, g, b)
     
+    def _direction_to_degrees(self, direction: str) -> float:
+        """Convert compass direction to degrees (0 = North, clockwise).
+        
+        Args:
+            direction: Compass direction string (N, NE, E, etc.)
+            
+        Returns:
+            Degrees from North (0-360)
+        """
+        # Map compass directions to degrees
+        direction_map = {
+            'N': 0, 'NNE': 22.5, 'NE': 45, 'ENE': 67.5,
+            'E': 90, 'ESE': 112.5, 'SE': 135, 'SSE': 157.5,
+            'S': 180, 'SSW': 202.5, 'SW': 225, 'WSW': 247.5,
+            'W': 270, 'WNW': 292.5, 'NW': 315, 'NNW': 337.5
+        }
+        # Extract direction from string (e.g., "5 mph NE" -> "NE")
+        dir_upper = direction.upper().strip()
+        for key in direction_map:
+            if dir_upper == key or dir_upper.endswith(' ' + key):
+                return direction_map[key]
+        return 0  # Default to North if unknown
+    
+    def _draw_wind_compass(self, canvas: DisplayCanvas, x: int, y: int, size: int, 
+                           direction: str, speed: str) -> None:
+        """Draw a compass rose with wind direction indicator.
+        
+        Args:
+            canvas: Canvas to draw on
+            x: Center X position
+            y: Center Y position  
+            size: Diameter of compass
+            direction: Wind direction (N, NE, E, etc.)
+            speed: Wind speed string
+        """
+        import math
+        
+        radius = size // 2
+        
+        # Draw compass circle
+        canvas.draw.ellipse(
+            [x - radius, y - radius, x + radius, y + radius],
+            outline=TEXT_SECONDARY,
+            width=1
+        )
+        
+        # Draw cardinal direction markers
+        font_tiny = self.font_loader.get_font(10)
+        markers = [('N', 0), ('E', 90), ('S', 180), ('W', 270)]
+        for label, degrees in markers:
+            angle_rad = math.radians(degrees - 90)  # Adjust so 0 = up
+            marker_x = x + int((radius - 8) * math.cos(angle_rad))
+            marker_y = y + int((radius - 8) * math.sin(angle_rad))
+            # Center the text on the marker position
+            bbox = canvas.draw.textbbox((0, 0), label, font=font_tiny)
+            text_w = bbox[2] - bbox[0]
+            text_h = bbox[3] - bbox[1]
+            canvas.draw.text(
+                (marker_x - text_w // 2, marker_y - text_h // 2),
+                label, font=font_tiny, fill=TEXT_SECONDARY
+            )
+        
+        # Draw wind direction arrow
+        degrees = self._direction_to_degrees(direction)
+        angle_rad = math.radians(degrees - 90)  # Adjust so 0 = up (North)
+        
+        # Arrow points in the direction wind is coming FROM
+        # So we draw from center outward in that direction
+        arrow_length = radius - 12
+        end_x = x + int(arrow_length * math.cos(angle_rad))
+        end_y = y + int(arrow_length * math.sin(angle_rad))
+        
+        # Draw arrow line
+        canvas.draw.line([(x, y), (end_x, end_y)], fill=TEXT_COLOR, width=2)
+        
+        # Draw arrowhead
+        arrow_head_size = 6
+        angle1 = angle_rad + math.radians(150)
+        angle2 = angle_rad - math.radians(150)
+        head1_x = end_x + int(arrow_head_size * math.cos(angle1))
+        head1_y = end_y + int(arrow_head_size * math.sin(angle1))
+        head2_x = end_x + int(arrow_head_size * math.cos(angle2))
+        head2_y = end_y + int(arrow_head_size * math.sin(angle2))
+        canvas.draw.polygon([(end_x, end_y), (head1_x, head1_y), (head2_x, head2_y)], fill=TEXT_COLOR)
+        
+        # Draw wind speed in center
+        font_small = self.font_loader.get_small_font()
+        # Extract just the number from speed (e.g., "5 to 10 mph" -> "5-10")
+        speed_text = speed.replace(' to ', '-').replace(' mph', '').replace(' ', '')
+        bbox = canvas.draw.textbbox((0, 0), speed_text, font=font_small)
+        text_w = bbox[2] - bbox[0]
+        text_h = bbox[3] - bbox[1]
+        canvas.draw.text(
+            (x - text_w // 2, y - text_h // 2),
+            speed_text, font=font_small, fill=TEXT_COLOR
+        )
+    
     def _invert_icon(self, icon: Image.Image) -> Image.Image:
         """Invert icon colors for dark theme (keep alpha channel)."""
         from PIL import ImageOps
@@ -203,10 +300,14 @@ class CurrentWeatherScreen(BaseScreen):
         humidity_text = f"Humidity: {conditions.humidity}%"
         canvas.centered_text(humidity_y, humidity_text, font_medium, TEXT_SECONDARY)
         
-        # Wind - use medium font for readability
-        wind_y = 195
-        wind_text = f"Wind: {conditions.wind_speed} {conditions.wind_direction}"
-        canvas.centered_text(wind_y, wind_text, font_medium, TEXT_SECONDARY)
+        # Wind compass rose with direction indicator
+        compass_size = 60
+        compass_x = self.width // 2
+        compass_y = 230
+        self._draw_wind_compass(
+            canvas, compass_x, compass_y, compass_size,
+            conditions.wind_direction, conditions.wind_speed
+        )
         
         # Footer - Last updated or cached indicator
         if is_cached:
