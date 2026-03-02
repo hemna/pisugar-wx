@@ -54,6 +54,21 @@ class CurrentWeatherScreen(BaseScreen):
         self.icon_dir = icon_dir
         self.temperature_unit = temperature_unit
     
+    def _invert_icon(self, icon: Image.Image) -> Image.Image:
+        """Invert icon colors for dark theme (keep alpha channel)."""
+        from PIL import ImageOps
+        if icon.mode == 'RGBA':
+            # Split into RGB and Alpha
+            r, g, b, a = icon.split()
+            # Invert RGB channels
+            rgb = Image.merge('RGB', (r, g, b))
+            rgb_inverted = ImageOps.invert(rgb)
+            # Recombine with original alpha
+            r2, g2, b2 = rgb_inverted.split()
+            return Image.merge('RGBA', (r2, g2, b2, a))
+        else:
+            return ImageOps.invert(icon)
+    
     def _paste_with_alpha(self, canvas: DisplayCanvas, icon: Image.Image, position: tuple) -> None:
         """Paste an RGBA image onto the canvas, handling transparency."""
         if icon.mode == 'RGBA':
@@ -106,6 +121,8 @@ class CurrentWeatherScreen(BaseScreen):
                 if icon_img.mode != 'RGBA':
                     icon_img = icon_img.convert('RGBA')
                 icon_img = icon_img.resize((ICON_SIZE, ICON_SIZE), Image.Resampling.LANCZOS)
+                # Invert colors for dark theme
+                icon_img = self._invert_icon(icon_img)
                 # Paste with transparency mask
                 self._paste_with_alpha(canvas, icon_img, (icon_x, icon_y))
                 icon_loaded = True
