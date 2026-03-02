@@ -81,7 +81,8 @@ class WeatherApp:
                        f"{self.current_weather.temperature}°{self.config.settings.temperature_unit}, "
                        f"{self.current_weather.condition}, "
                        f"Humidity: {self.current_weather.humidity}%, "
-                       f"Wind: {self.current_weather.wind_speed} {self.current_weather.wind_direction}")
+                       f"Wind: {self.current_weather.wind_speed} {self.current_weather.wind_direction}, "
+                       f"Pressure: {self.current_weather.pressure}")
             return True
             
         except Exception as e:
