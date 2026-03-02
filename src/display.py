@@ -69,16 +69,15 @@ class Display:
             if image.mode != 'RGB':
                 image = image.convert('RGB')
             
-            # Convert RGB to RGB565 (16-bit color)
+            # Convert RGB to RGB565 (16-bit color) as byte array
+            # WhisPlayBoard expects two bytes per pixel (high byte, low byte)
             pixels = list(image.getdata())
             rgb565_data = []
             for r, g, b in pixels:
-                # Convert 8-bit RGB to 5-6-5 RGB565
-                r5 = (r >> 3) & 0x1F
-                g6 = (g >> 2) & 0x3F
-                b5 = (b >> 3) & 0x1F
-                rgb565 = (r5 << 11) | (g6 << 5) | b5
-                rgb565_data.append(rgb565)
+                # Convert 8-bit RGB to RGB565 format (matches working example)
+                rgb565 = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
+                # Append as two bytes (high byte first, then low byte)
+                rgb565_data.extend([(rgb565 >> 8) & 0xFF, rgb565 & 0xFF])
             
             # Display using WhisPlay
             self._board.draw_image(0, 0, self.width, self.height, rgb565_data)
