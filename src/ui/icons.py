@@ -35,9 +35,9 @@ WEATHER_ICON_MAP: Dict[str, str] = {
     
     # Snow
     "snow": "snow.png",
-    "light snow": "snow_light.png",
-    "heavy snow": "snow_heavy.png",
-    "blizzard": "snow_heavy.png",
+    "light snow": "snow.png",
+    "heavy snow": "snow.png",
+    "blizzard": "snow.png",
     "sleet": "sleet.png",
     "freezing rain": "freezing_rain.png",
     "ice": "ice.png",
