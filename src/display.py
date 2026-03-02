@@ -104,13 +104,26 @@ class Display:
             return
         
         try:
+            from PIL import Image, ImageDraw
+            
             # Convert image to RGB if needed
             if image.mode != 'RGB':
                 image = image.convert('RGB')
             
-            logger.info(f"Displaying image size: {image.size}")
+            # Create a test pattern - fill with a color first to verify display works
+            test_img = Image.new('RGB', (self.width, self.height), (255, 0, 0))  # Red background
+            draw = ImageDraw.Draw(test_img)
+            draw.rectangle([10, 10, self.width-10, self.height-10], fill=(0, 255, 0))  # Green inner rect
+            draw.text((self.width//2-50, self.height//2), "TEST", fill=(255, 255, 255))
             
-            # Display the image
+            logger.info(f"Displaying test image size: {test_img.size}")
+            
+            # Display the test image first
+            self._display.display(test_img)
+            logger.info("Test image displayed")
+            
+            # Then display the actual image
+            logger.info(f"Displaying image size: {image.size}")
             self._display.display(image)
             logger.info("Image displayed successfully")
         except Exception as e:
