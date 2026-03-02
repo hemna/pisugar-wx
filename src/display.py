@@ -84,7 +84,13 @@ class Display:
             return
         
         try:
+            # Convert image to RGB if needed
+            if image.mode != 'RGB':
+                image = image.convert('RGB')
+            
+            # Display the image
             self._display.display(image)
+            logger.debug("Image displayed")
         except Exception as e:
             logger.error(f"Failed to show image: {e}")
     
