@@ -1,6 +1,7 @@
 """Display driver for ST7789-based displays."""
 
 import logging
+import time
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -108,14 +109,14 @@ class Display:
             if image.mode != 'RGB':
                 image = image.convert('RGB')
             
-            # Try inverting colors (common ST7789 issue)
-            from PIL import ImageOps
-            image = ImageOps.invert(image)
-            
             logger.info(f"Displaying image size: {image.size}")
             
-            # Display the image
-            self._display.display(image)
+            # Try to force display on
+            # Display the image multiple times to ensure it shows
+            for i in range(3):
+                self._display.display(image)
+                time.sleep(0.1)
+            
             logger.info("Image displayed successfully")
         except Exception as e:
             import traceback
