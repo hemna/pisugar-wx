@@ -255,8 +255,12 @@ class CurrentWeatherScreen(BaseScreen):
         # Draw station name centered at top
         canvas.centered_text(LAYOUT_PADDING, station.name, font_medium, TEXT_COLOR)
         
-        # Draw weather icon (centered, below station name)
-        icon_x = (self.width - ICON_SIZE) // 2
+        # Layout: Left side has icon + temp, right side has wind compass
+        left_center = 70  # Center of left column
+        right_center = 180  # Center of right column
+        
+        # Draw weather icon (left side)
+        icon_x = left_center - ICON_SIZE // 2
         icon_y = 35
         
         icon_path = get_icon_path(self.icon_dir, conditions.condition)
@@ -288,34 +292,44 @@ class CurrentWeatherScreen(BaseScreen):
                 outline=TEXT_SECONDARY
             )
         
-        # Temperature (large, centered below icon) with color based on temp
+        # Temperature (left side, below icon) with color based on temp
         temp_color = self._get_temp_color(conditions.temperature)
         temp_text = f"{int(conditions.temperature)}°{self.temperature_unit}"
         temp_bbox = canvas.draw.textbbox((0, 0), temp_text, font=font_large)
         temp_width = temp_bbox[2] - temp_bbox[0]
-        temp_x = (self.width - temp_width) // 2
-        canvas.text((temp_x, 95), temp_text, font=font_large, fill=temp_color)
+        temp_x = left_center - temp_width // 2
+        canvas.text((temp_x, 90), temp_text, font=font_large, fill=temp_color)
         
-        # Condition text (may be long, truncate if needed)
+        # Wind compass rose (right side)
+        compass_size = 55
+        compass_y = 75
+        self._draw_wind_compass(
+            canvas, right_center, compass_y, compass_size,
+            conditions.wind_direction, conditions.wind_speed
+        )
+        
+        # Condition text (full width, below icon/compass area)
         condition_y = 140
         condition_text = conditions.condition
-        if len(condition_text) > 25:
-            condition_text = condition_text[:22] + "..."
+        if len(condition_text) > 28:
+            condition_text = condition_text[:25] + "..."
         canvas.centered_text(condition_y, condition_text, font_medium, TEXT_COLOR)
         
-        # Humidity - use medium font for readability
-        humidity_y = 165
+        # Humidity
+        humidity_y = 170
         humidity_text = f"Humidity: {conditions.humidity}%"
         canvas.centered_text(humidity_y, humidity_text, font_medium, TEXT_SECONDARY)
         
-        # Wind compass rose with direction indicator
-        compass_size = 40
-        compass_x = self.width // 2
-        compass_y = 218
-        self._draw_wind_compass(
-            canvas, compass_x, compass_y, compass_size,
-            conditions.wind_direction, conditions.wind_speed
-        )
+        # Footer - Last updated or cached indicator
+        if is_cached:
+            footer_text = "Cached Data"
+        elif last_updated:
+            footer_text = f"Updated: {last_updated.strftime('%H:%M')}"
+        else:
+            footer_text = ""
+        
+        if footer_text:
+            canvas.centered_text(self.height - 15, footer_text, font_small, TEXT_SECONDARY)
         
         return canvas.get_image()
 
