@@ -144,13 +144,13 @@ class CurrentWeatherScreen(BaseScreen):
             icon_x=26,  # left section center=50
             icon_y=35,
             temp_x=140,  # center section
-            temp_y=45,
+            temp_y=50,
             compass_x=230,  # right section
             compass_y=70,
             compass_size=50,
-            condition_y=100,  # center section, below temp
-            humidity_y=210,  # bottom
-            footer_y=225
+            condition_y=145,  # full width, below the three sections
+            humidity_y=190,  # more space above footer
+            footer_y=215
         )
     
     def _get_layout(self) -> LayoutConfig:
@@ -421,8 +421,8 @@ class CurrentWeatherScreen(BaseScreen):
             conditions.wind_direction, conditions.wind_speed
         )
         
-        # Center section (below temp): Condition text with word wrap
-        max_width = 140  # Narrower for landscape center section
+        # Condition text - full width, centered below the three sections
+        max_width = self.width - 20  # Use full width with margin
         words = conditions.condition.split()
         lines = []
         current_line = ""
@@ -439,13 +439,10 @@ class CurrentWeatherScreen(BaseScreen):
         if current_line:
             lines.append(current_line)
         
-        # Draw condition lines centered in middle section
+        # Draw condition lines centered (full width)
         line_height = 20
         for i, line in enumerate(lines[:2]):  # Max 2 lines
-            bbox = canvas.draw.textbbox((0, 0), line, font=font_medium)
-            text_w = bbox[2] - bbox[0]
-            line_x = layout.temp_x - text_w // 2
-            canvas.text((line_x, layout.condition_y + i * line_height), line, font=font_medium, fill=TEXT_COLOR)
+            canvas.centered_text(layout.condition_y + i * line_height, line, font_medium, TEXT_COLOR)
         
         # Bottom: Humidity (centered)
         humidity_text = f"Humidity: {conditions.humidity}%"
