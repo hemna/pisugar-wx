@@ -11,12 +11,13 @@ from typing import Optional
 # Setup path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from src.config import load_config, AppConfig
+from src.config import load_config, AppConfig, WeatherStation
 from src.display import Display, MockDisplay
 from src.weather.api import WeatherAPI
 from src.weather.cache import WeatherCacheManager
 from src.weather.models import CurrentConditions, Forecast
 from src.ui.screens import CurrentWeatherScreen, OfflineScreen, ErrorScreen
+from src.random_city import get_random_city
 
 # Import PIL Image for landscape rotation
 try:
@@ -59,6 +60,10 @@ class WeatherApp:
         self.last_fetch_time: Optional[datetime] = None
         self.current_weather: Optional[CurrentConditions] = None
         self.current_forecasts: list[Forecast] = []
+        
+        # Random city tracking
+        self.showing_random_city = False
+        self.random_city_station: Optional[WeatherStation] = None
     
     def fetch_weather(self) -> bool:
         """Fetch weather data for current station.
@@ -66,11 +71,15 @@ class WeatherApp:
         Returns:
             True if fetch succeeded, False otherwise.
         """
-        if not self.config.stations:
+        if not self.config.stations and not self.showing_random_city:
             logger.error("No stations configured")
             return False
         
-        station = self.config.stations[self.current_station_index]
+        # Get the appropriate station
+        if self.showing_random_city and self.random_city_station:
+            station = self.random_city_station
+        else:
+            station = self.config.stations[self.current_station_index]
         
         try:
             cache = self.api.get_weather_with_cache(station, self.cache_manager)
@@ -92,10 +101,15 @@ class WeatherApp:
     
     def update_display(self) -> None:
         """Update display with current weather data."""
-        if not self.config.stations:
+        if not self.config.stations and not self.showing_random_city:
             return
         
-        station = self.config.stations[self.current_station_index]
+        # Get the appropriate station
+        if self.showing_random_city and self.random_city_station:
+            station = self.random_city_station
+        else:
+            station = self.config.stations[self.current_station_index]
+        
         orientation = self.config.settings.orientation
         
         # Check if we have weather data
@@ -158,13 +172,48 @@ class WeatherApp:
         return elapsed >= refresh_seconds
     
     def cycle_station(self) -> None:
-        """Move to next station in rotation."""
-        if len(self.config.stations) > 1:
-            self.current_station_index = (
-                self.current_station_index + 1
-            ) % len(self.config.stations)
+        """Move to next station in rotation.
+        
+        After cycling through all configured stations, shows a random US city
+        if random_city_enabled is True, then restarts the cycle.
+        """
+        num_stations = len(self.config.stations)
+        
+        # If currently showing random city, go back to first configured station
+        if self.showing_random_city:
+            self.showing_random_city = False
+            self.random_city_station = None
+            self.current_station_index = 0
+            logger.info("Returning to configured stations")
+            self.fetch_weather()
+            return
+        
+        # Move to next station
+        next_index = self.current_station_index + 1
+        
+        # Check if we've completed a full cycle through configured stations
+        if next_index >= num_stations:
+            # If random city is enabled, show one before restarting
+            if self.config.settings.random_city_enabled:
+                city_name, state, lat, lon = get_random_city()
+                self.random_city_station = WeatherStation(
+                    id=f"random_{city_name.lower().replace(' ', '_')}",
+                    name=f"{city_name}, {state}",
+                    latitude=lat,
+                    longitude=lon
+                )
+                self.showing_random_city = True
+                logger.info(f"Showing random city: {self.random_city_station.name}")
+                self.fetch_weather()
+            else:
+                # Just wrap around to first station
+                self.current_station_index = 0
+                logger.info("Cycled back to station 0")
+                self.fetch_weather()
+        else:
+            # Normal cycling to next station
+            self.current_station_index = next_index
             logger.info(f"Cycled to station {self.current_station_index}")
-            # Fetch weather for the new station
             self.fetch_weather()
     
     def run(self) -> None:

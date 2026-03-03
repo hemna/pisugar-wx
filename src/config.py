@@ -33,6 +33,7 @@ class AppSettings:
     temperature_unit: str = "F"
     display_brightness: int = 100
     orientation: str = "portrait"
+    random_city_enabled: bool = True  # Show random US city after cycling through stations
     user_agent: str = "pisugar-weather/0.1.0"
     cache_dir: str = "~/.cache/pisugar-weather"
 
@@ -100,7 +101,8 @@ def load_config(config_path: Optional[str] = None) -> AppConfig:
         cycle_interval_seconds=settings_data.get("cycle_interval_seconds", 30),
         temperature_unit=settings_data.get("temperature_unit", "F"),
         display_brightness=settings_data.get("display_brightness", 100),
-        orientation=orientation
+        orientation=orientation,
+        random_city_enabled=settings_data.get("random_city_enabled", True)
     )
     
     return AppConfig(
@@ -137,7 +139,8 @@ def save_config(config: AppConfig, config_path: str) -> None:
             "cycle_interval_seconds": config.settings.cycle_interval_seconds,
             "temperature_unit": config.settings.temperature_unit,
             "display_brightness": config.settings.display_brightness,
-            "orientation": config.settings.orientation
+            "orientation": config.settings.orientation,
+            "random_city_enabled": config.settings.random_city_enabled
         }
     }
     
