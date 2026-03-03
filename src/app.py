@@ -25,6 +25,13 @@ try:
 except ImportError:
     Image = None
 
+# Map display_rotation degrees to PIL Transpose values
+ROTATION_MAP = {
+    90: Image.Transpose.ROTATE_90 if Image else None,
+    180: Image.Transpose.ROTATE_180 if Image else None,
+    270: Image.Transpose.ROTATE_270 if Image else None,
+}
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -144,6 +151,12 @@ class WeatherApp:
             # and must be rotated to fit
             if orientation == "landscape" and Image is not None:
                 image = image.transpose(Image.Transpose.ROTATE_90)
+            
+            # Apply display_rotation setting for physical mounting adjustments
+            display_rotation = self.config.settings.display_rotation
+            if display_rotation != 0 and Image is not None and display_rotation in ROTATION_MAP:
+                image = image.transpose(ROTATION_MAP[display_rotation])
+                logger.debug(f"Applied display rotation: {display_rotation}°")
             
             self.display.show_image(image)
             logger.debug(f"Displayed weather for {station.name} ({orientation} mode)")

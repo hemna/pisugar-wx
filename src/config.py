@@ -11,6 +11,9 @@ logger = logging.getLogger(__name__)
 # Valid orientation values
 VALID_ORIENTATIONS = ("portrait", "landscape")
 
+# Valid display rotation values (degrees)
+VALID_ROTATIONS = (0, 90, 180, 270)
+
 
 @dataclass
 class WeatherStation:
@@ -33,6 +36,7 @@ class AppSettings:
     temperature_unit: str = "F"
     display_brightness: int = 100
     orientation: str = "portrait"
+    display_rotation: int = 0  # Physical rotation: 0, 90, 180, or 270 degrees
     random_city_enabled: bool = True  # Show random US city after cycling through stations
     user_agent: str = "pisugar-weather/0.1.0"
     cache_dir: str = "~/.cache/pisugar-weather"
@@ -96,12 +100,23 @@ def load_config(config_path: Optional[str] = None) -> AppConfig:
         )
         orientation = "portrait"
     
+    # Parse display_rotation with validation
+    raw_rotation = settings_data.get("display_rotation", 0)
+    display_rotation = raw_rotation if isinstance(raw_rotation, int) else 0
+    if display_rotation not in VALID_ROTATIONS:
+        logger.warning(
+            f"Invalid display_rotation '{raw_rotation}', defaulting to 0. "
+            f"Valid values: {VALID_ROTATIONS}"
+        )
+        display_rotation = 0
+    
     settings = AppSettings(
         refresh_interval_minutes=settings_data.get("refresh_interval_minutes", 15),
         cycle_interval_seconds=settings_data.get("cycle_interval_seconds", 30),
         temperature_unit=settings_data.get("temperature_unit", "F"),
         display_brightness=settings_data.get("display_brightness", 100),
         orientation=orientation,
+        display_rotation=display_rotation,
         random_city_enabled=settings_data.get("random_city_enabled", True)
     )
     
@@ -140,6 +155,7 @@ def save_config(config: AppConfig, config_path: str) -> None:
             "temperature_unit": config.settings.temperature_unit,
             "display_brightness": config.settings.display_brightness,
             "orientation": config.settings.orientation,
+            "display_rotation": config.settings.display_rotation,
             "random_city_enabled": config.settings.random_city_enabled
         }
     }
