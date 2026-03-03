@@ -31,6 +31,11 @@
     "cycle_interval_seconds": 30,
     "temperature_unit": "F",
     "display_brightness": 100,
-    "orientation": "landscape"
+    "orientation": "landscape",
+    "display_rotation": 180,
+    "random_city_enabled": true,
+    "radar_enabled": true,
+    "radar_duration_seconds": 15,
+    "radar_radius_miles": 100
   }
 }
