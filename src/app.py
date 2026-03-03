@@ -81,6 +81,7 @@ class WeatherApp:
         self.radar_time: float = 0.0
         self.current_base_map = None  # PIL Image
         self.current_radar_image = None  # PIL Image
+        self.radar_prefetched = False  # True if radar already fetched for current station
         
         # Register button callback if board is available
         self._register_button_callback()
@@ -355,6 +356,9 @@ class WeatherApp:
         """
         num_stations = len(self.config.stations)
         
+        # Reset radar prefetch flag for new station
+        self.radar_prefetched = False
+        
         # If currently showing random city, go back to first configured station
         if self.showing_random_city:
             self.showing_random_city = False
@@ -396,6 +400,7 @@ class WeatherApp:
         """Main application loop.
         
         Display cycle: Weather (30s) → Radar (15s) → Next Station Weather → Radar → ...
+        Radar is prefetched while weather is displayed for seamless transitions.
         """
         logger.info("Starting weather display application")
         radar_enabled = self.config.settings.radar_enabled
@@ -408,6 +413,7 @@ class WeatherApp:
         # Reset cycle time at start
         self.cycle_time = time.time()
         self.showing_radar = False
+        self.radar_prefetched = False
         
         try:
             while True:
@@ -432,15 +438,19 @@ class WeatherApp:
                     # Currently showing weather
                     self.update_display()
                     
+                    # Prefetch radar while weather is displayed (if not already fetched)
+                    if radar_enabled and not self.radar_prefetched:
+                        logger.debug("Prefetching radar while showing weather")
+                        self.fetch_radar()
+                        self.radar_prefetched = True
+                    
                     # Check if weather duration has elapsed
                     elapsed = current_time - self.cycle_time
                     if elapsed >= weather_duration:
                         if radar_enabled:
-                            # Switch to radar for current station
+                            # Switch to radar for current station (already prefetched)
                             self.showing_radar = True
                             self.radar_time = current_time
-                            # Fetch radar data
-                            self.fetch_radar()
                         else:
                             # Radar disabled, just cycle to next station
                             self.cycle_station()
