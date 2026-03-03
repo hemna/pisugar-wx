@@ -601,7 +601,127 @@ class CurrentWeatherScreen(BaseScreen):
         # Use landscape rendering for landscape orientation
         if self.orientation == "landscape":
             self._render_landscape(canvas, station, conditions, is_cached, last_updated, layout)
-            return canvas.get_image()
+        return canvas.get_image()
+
+
+class RadarScreen(BaseScreen):
+    """Screen displaying radar image with base map.
+    
+    Shows weather radar (CREF) overlaid on OpenStreetMap base map
+    with station name at the top.
+    """
+    
+    def __init__(
+        self,
+        width: int = 240,
+        height: int = 280,
+        orientation: str = "portrait"
+    ):
+        """Initialize the radar screen.
+        
+        Args:
+            width: Display width in pixels (ignored, determined by orientation).
+            height: Display height in pixels (ignored, determined by orientation).
+            orientation: Display orientation ('portrait' or 'landscape').
+        """
+        self.orientation = orientation.lower()
+        
+        # Set dimensions based on orientation
+        if self.orientation == "landscape":
+            actual_width, actual_height = 280, 240
+        else:
+            actual_width, actual_height = 240, 280
+        
+        super().__init__(actual_width, actual_height)
+    
+    def render(
+        self,
+        station_name: str,
+        base_map: Image.Image,
+        radar_image: Image.Image
+    ) -> Image.Image:
+        """Render radar screen with base map and radar overlay.
+        
+        Args:
+            station_name: Name of the weather station.
+            base_map: PIL Image of the base map (OpenStreetMap).
+            radar_image: PIL Image of radar data (RGBA with transparency).
+            
+        Returns:
+            PIL Image for display.
+        """
+        # Start with base map, resize if needed
+        if base_map.size != (self.width, self.height):
+            base_map = base_map.resize((self.width, self.height), Image.Resampling.LANCZOS)
+        
+        # Convert to RGBA if needed
+        if base_map.mode != "RGBA":
+            base_map = base_map.convert("RGBA")
+        
+        # Resize radar if needed
+        if radar_image.size != (self.width, self.height):
+            radar_image = radar_image.resize((self.width, self.height), Image.Resampling.LANCZOS)
+        
+        # Ensure radar is RGBA
+        if radar_image.mode != "RGBA":
+            radar_image = radar_image.convert("RGBA")
+        
+        # Composite radar over base map
+        composite = Image.alpha_composite(base_map, radar_image)
+        
+        # Convert to RGB for drawing text
+        result = composite.convert("RGB")
+        
+        # Add station name text at top with semi-transparent background
+        from PIL import ImageDraw
+        draw = ImageDraw.Draw(result)
+        
+        font = self.font_loader.get_default_font()
+        
+        # Get text size for background
+        text = f"Radar: {station_name}"
+        bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        
+        # Draw semi-transparent background for text
+        padding = 4
+        bg_x = (self.width - text_width) // 2 - padding
+        bg_y = 4
+        draw.rectangle(
+            [bg_x, bg_y, bg_x + text_width + padding * 2, bg_y + text_height + padding * 2],
+            fill=(0, 0, 0, 180)
+        )
+        
+        # Draw text
+        text_x = (self.width - text_width) // 2
+        text_y = bg_y + padding
+        draw.text((text_x, text_y), text, font=font, fill=WHITE)
+        
+        return result
+    
+    def render_error(self, station_name: str, message: str = "Radar unavailable") -> Image.Image:
+        """Render error screen when radar is unavailable.
+        
+        Args:
+            station_name: Name of the weather station.
+            message: Error message to display.
+            
+        Returns:
+            PIL Image for display.
+        """
+        canvas = self.create_canvas(background=(40, 40, 40))
+        
+        font_medium = self.font_loader.get_default_font()
+        font_small = self.font_loader.get_small_font()
+        
+        # Title
+        canvas.centered_text(60, f"Radar: {station_name}", font_medium, WHITE)
+        
+        # Error message
+        canvas.centered_text(120, message, font_small, GRAY)
+        
+        return canvas.get_image()
         
         # Portrait rendering (original layout)
         font_small = self.font_loader.get_small_font()

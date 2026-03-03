@@ -40,6 +40,10 @@ class AppSettings:
     random_city_enabled: bool = True  # Show random US city after cycling through stations
     user_agent: str = "pisugar-weather/0.1.0"
     cache_dir: str = "~/.cache/pisugar-weather"
+    # Radar settings
+    radar_enabled: bool = True  # Show radar screen after each weather display
+    radar_duration_seconds: int = 15  # How long to show radar screen
+    radar_radius_miles: int = 100  # Radar coverage radius around station
 
 
 @dataclass
@@ -117,7 +121,10 @@ def load_config(config_path: Optional[str] = None) -> AppConfig:
         display_brightness=settings_data.get("display_brightness", 100),
         orientation=orientation,
         display_rotation=display_rotation,
-        random_city_enabled=settings_data.get("random_city_enabled", True)
+        random_city_enabled=settings_data.get("random_city_enabled", True),
+        radar_enabled=settings_data.get("radar_enabled", True),
+        radar_duration_seconds=settings_data.get("radar_duration_seconds", 15),
+        radar_radius_miles=settings_data.get("radar_radius_miles", 100)
     )
     
     return AppConfig(

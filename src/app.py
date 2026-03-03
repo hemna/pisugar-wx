@@ -16,8 +16,9 @@ from src.display import Display, MockDisplay
 from src.weather.api import WeatherAPI
 from src.weather.cache import WeatherCacheManager
 from src.weather.models import CurrentConditions, Forecast
-from src.ui.screens import CurrentWeatherScreen, OfflineScreen, ErrorScreen
+from src.ui.screens import CurrentWeatherScreen, OfflineScreen, ErrorScreen, RadarScreen
 from src.random_city import get_random_city
+from src.radar import get_base_map, fetch_radar_image
 
 # Import PIL Image for landscape rotation
 try:
@@ -75,6 +76,12 @@ class WeatherApp:
         self.showing_random_city = False
         self.random_city_station: Optional[WeatherStation] = None
         
+        # Radar display state
+        self.showing_radar = False
+        self.radar_time: float = 0.0
+        self.current_base_map = None  # PIL Image
+        self.current_radar_image = None  # PIL Image
+        
         # Register button callback if board is available
         self._register_button_callback()
     
@@ -97,11 +104,19 @@ class WeatherApp:
     def _on_button_pressed(self) -> None:
         """Handle button press event.
         
-        Cycles to the next station and resets the auto-cycle timer.
+        If showing radar, skip to next station's weather.
+        If showing weather, cycle to next station.
         Called from WhisPlayBoard's button handler thread.
         """
-        logger.info("Button pressed - cycling station")
-        self.cycle_station()
+        if self.showing_radar:
+            # Skip radar, go to next station's weather
+            logger.info("Button pressed during radar - skipping to next station")
+            self.showing_radar = False
+            self.cycle_station()
+        else:
+            # Normal behavior - cycle to next station
+            logger.info("Button pressed - cycling station")
+            self.cycle_station()
         # Reset the cycle timer to prevent immediate auto-cycle
         self.cycle_time = time.time()
     
@@ -203,6 +218,121 @@ class WeatherApp:
             except:
                 pass
     
+    def fetch_radar(self) -> bool:
+        """Fetch radar image for current station.
+        
+        Returns:
+            True if fetch succeeded, False otherwise.
+        """
+        # Get the appropriate station
+        if self.showing_random_city and self.random_city_station:
+            station = self.random_city_station
+        else:
+            station = self.config.stations[self.current_station_index]
+        
+        orientation = self.config.settings.orientation
+        
+        # Determine image dimensions based on orientation
+        if orientation == "landscape":
+            width, height = 280, 240
+        else:
+            width, height = 240, 280
+        
+        radius = self.config.settings.radar_radius_miles
+        cache_dir = self.config.settings.cache_dir
+        
+        try:
+            # Fetch base map
+            logger.debug(f"Fetching base map for {station.name}")
+            self.current_base_map = get_base_map(
+                station.latitude,
+                station.longitude,
+                radius,
+                width,
+                height,
+                cache_dir
+            )
+            
+            if self.current_base_map is None:
+                logger.warning(f"Failed to fetch base map for {station.name}")
+                return False
+            
+            # Fetch radar image
+            logger.debug(f"Fetching radar for {station.name}")
+            self.current_radar_image = fetch_radar_image(
+                station.latitude,
+                station.longitude,
+                radius,
+                width,
+                height,
+                cache_dir
+            )
+            
+            if self.current_radar_image is None:
+                logger.warning(f"Failed to fetch radar for {station.name}")
+                return False
+            
+            logger.info(f"Fetched radar for {station.name}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to fetch radar: {e}")
+            return False
+    
+    def update_radar_display(self) -> None:
+        """Update display with radar image."""
+        # Get the appropriate station
+        if self.showing_random_city and self.random_city_station:
+            station = self.random_city_station
+        else:
+            station = self.config.stations[self.current_station_index]
+        
+        orientation = self.config.settings.orientation
+        
+        # Check if we have radar data
+        if self.current_base_map is None or self.current_radar_image is None:
+            # Show error screen
+            try:
+                screen = RadarScreen(orientation=orientation)
+                image = screen.render_error(station.name)
+                
+                # Apply rotations
+                if orientation == "landscape" and Image is not None:
+                    image = image.transpose(Image.Transpose.ROTATE_90)
+                
+                display_rotation = self.config.settings.display_rotation
+                if display_rotation != 0 and Image is not None and display_rotation in ROTATION_MAP:
+                    image = image.transpose(ROTATION_MAP[display_rotation])
+                
+                self.display.show_image(image)
+            except Exception as e:
+                logger.error(f"Failed to show radar error screen: {e}")
+            return
+        
+        # Render radar screen
+        try:
+            screen = RadarScreen(orientation=orientation)
+            image = screen.render(
+                station_name=station.name,
+                base_map=self.current_base_map,
+                radar_image=self.current_radar_image
+            )
+            
+            # For landscape mode, rotate the image 90° before display
+            if orientation == "landscape" and Image is not None:
+                image = image.transpose(Image.Transpose.ROTATE_90)
+            
+            # Apply display_rotation setting for physical mounting adjustments
+            display_rotation = self.config.settings.display_rotation
+            if display_rotation != 0 and Image is not None and display_rotation in ROTATION_MAP:
+                image = image.transpose(ROTATION_MAP[display_rotation])
+                logger.debug(f"Applied display rotation: {display_rotation}°")
+            
+            self.display.show_image(image)
+            logger.debug(f"Displayed radar for {station.name} ({orientation} mode)")
+        except Exception as e:
+            logger.error(f"Failed to update radar display: {e}")
+    
     def should_refresh(self) -> bool:
         """Check if weather data should be refreshed.
         
@@ -263,29 +393,58 @@ class WeatherApp:
             self.fetch_weather()
     
     def run(self) -> None:
-        """Main application loop."""
+        """Main application loop.
+        
+        Display cycle: Weather (30s) → Radar (15s) → Next Station Weather → Radar → ...
+        """
         logger.info("Starting weather display application")
+        radar_enabled = self.config.settings.radar_enabled
+        radar_duration = self.config.settings.radar_duration_seconds
+        weather_duration = self.config.settings.cycle_interval_seconds
         
         # Initial fetch
         self.fetch_weather()
         
         # Reset cycle time at start
         self.cycle_time = time.time()
+        self.showing_radar = False
         
         try:
             while True:
-                # Check if refresh needed
+                current_time = time.time()
+                
+                # Check if refresh needed (for weather data)
                 if self.should_refresh():
                     self.fetch_weather()
                 
-                # Update display
-                self.update_display()
-                
-                # Cycle station based on timer
-                current_time = time.time()
-                if current_time - self.cycle_time >= self.config.settings.cycle_interval_seconds:
-                    self.cycle_station()
-                    self.cycle_time = current_time
+                if self.showing_radar:
+                    # Currently showing radar
+                    self.update_radar_display()
+                    
+                    # Check if radar duration has elapsed
+                    elapsed = current_time - self.radar_time
+                    if elapsed >= radar_duration:
+                        # Radar done, cycle to next station
+                        self.showing_radar = False
+                        self.cycle_station()
+                        self.cycle_time = current_time
+                else:
+                    # Currently showing weather
+                    self.update_display()
+                    
+                    # Check if weather duration has elapsed
+                    elapsed = current_time - self.cycle_time
+                    if elapsed >= weather_duration:
+                        if radar_enabled:
+                            # Switch to radar for current station
+                            self.showing_radar = True
+                            self.radar_time = current_time
+                            # Fetch radar data
+                            self.fetch_radar()
+                        else:
+                            # Radar disabled, just cycle to next station
+                            self.cycle_station()
+                            self.cycle_time = current_time
                 
                 # Sleep briefly
                 time.sleep(1)
