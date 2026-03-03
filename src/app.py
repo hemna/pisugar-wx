@@ -106,7 +106,7 @@ class WeatherApp:
         """Handle button press event.
         
         If showing radar, skip to next station's weather.
-        If showing weather, cycle to next station.
+        If showing weather, skip to radar (if enabled) or cycle to next station.
         Called from WhisPlayBoard's button handler thread.
         """
         if self.showing_radar:
@@ -114,12 +114,18 @@ class WeatherApp:
             logger.info("Button pressed during radar - skipping to next station")
             self.showing_radar = False
             self.cycle_station()
+            self.cycle_time = time.time()
         else:
-            # Normal behavior - cycle to next station
-            logger.info("Button pressed - cycling station")
-            self.cycle_station()
-        # Reset the cycle timer to prevent immediate auto-cycle
-        self.cycle_time = time.time()
+            # Showing weather - skip to radar if enabled
+            if self.config.settings.radar_enabled:
+                logger.info("Button pressed during weather - skipping to radar")
+                self.showing_radar = True
+                self.radar_time = time.time()
+            else:
+                # Radar disabled, cycle to next station
+                logger.info("Button pressed - cycling station")
+                self.cycle_station()
+                self.cycle_time = time.time()
     
     def fetch_weather(self) -> bool:
         """Fetch weather data for current station.
