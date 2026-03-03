@@ -68,9 +68,42 @@ class WeatherApp:
         self.current_weather: Optional[CurrentConditions] = None
         self.current_forecasts: list[Forecast] = []
         
+        # Timer for station cycling (can be reset by button press)
+        self.cycle_time: float = time.time()
+        
         # Random city tracking
         self.showing_random_city = False
         self.random_city_station: Optional[WeatherStation] = None
+        
+        # Register button callback if board is available
+        self._register_button_callback()
+    
+    def _register_button_callback(self) -> None:
+        """Register button press callback with the WhisPlayBoard.
+        
+        Gracefully handles cases where board is not available (mock display).
+        """
+        board = self.display.board
+        if board is None:
+            logger.info("No hardware board available, button support disabled")
+            return
+        
+        try:
+            board.on_button_press(self._on_button_pressed)
+            logger.info("Button callback registered successfully")
+        except Exception as e:
+            logger.warning(f"Failed to register button callback: {e}")
+    
+    def _on_button_pressed(self) -> None:
+        """Handle button press event.
+        
+        Cycles to the next station and resets the auto-cycle timer.
+        Called from WhisPlayBoard's button handler thread.
+        """
+        logger.info("Button pressed - cycling station")
+        self.cycle_station()
+        # Reset the cycle timer to prevent immediate auto-cycle
+        self.cycle_time = time.time()
     
     def fetch_weather(self) -> bool:
         """Fetch weather data for current station.
@@ -236,7 +269,8 @@ class WeatherApp:
         # Initial fetch
         self.fetch_weather()
         
-        cycle_time = time.time()
+        # Reset cycle time at start
+        self.cycle_time = time.time()
         
         try:
             while True:
@@ -247,11 +281,11 @@ class WeatherApp:
                 # Update display
                 self.update_display()
                 
-                # Cycle station
+                # Cycle station based on timer
                 current_time = time.time()
-                if current_time - cycle_time >= self.config.settings.cycle_interval_seconds:
+                if current_time - self.cycle_time >= self.config.settings.cycle_interval_seconds:
                     self.cycle_station()
-                    cycle_time = current_time
+                    self.cycle_time = current_time
                 
                 # Sleep briefly
                 time.sleep(1)

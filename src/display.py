@@ -106,6 +106,15 @@ class Display:
         """Check if display is available."""
         return self._board is not None
 
+    @property
+    def board(self):
+        """Get the underlying WhisPlayBoard instance.
+        
+        Returns:
+            WhisPlayBoard instance or None if not available.
+        """
+        return self._board
+
 
 class MockDisplay:
     """Mock display for testing without hardware."""
@@ -128,3 +137,12 @@ class MockDisplay:
     @property
     def is_available(self) -> bool:
         return True
+
+    @property
+    def board(self):
+        """Mock display has no board.
+        
+        Returns:
+            None (no hardware board available).
+        """
+        return None
