@@ -27,13 +27,13 @@
 
 - [X] T001 Add `board` property to Display class in src/display.py
 
-**Checkpoint**: Display.board returns WhisPlayBoard instance (or None for MockDisplay)
+**Checkpoint**: Display.board returns WhisplayBoard instance (or None for MockDisplay)
 
 ---
 
 ## Phase 3: User Story 1 - Button Press Detection (Priority: P1) 🎯 MVP
 
-**Goal**: Register button callback with WhisPlayBoard to detect button presses
+**Goal**: Register button callback with WhisplayBoard to detect button presses
 
 **Independent Test**: Press button on device, see "Button pressed" in logs
 

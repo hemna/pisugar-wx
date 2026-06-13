@@ -11,13 +11,13 @@
 
 | Property | Type | Description |
 |----------|------|-------------|
-| board | WhisPlayBoard \| None | Underlying hardware board instance |
+| board | WhisplayBoard \| None | Underlying hardware board instance |
 
 **New Property**:
 ```python
 @property
 def board(self):
-    """Get the underlying WhisPlayBoard instance for button handling."""
+    """Get the underlying WhisplayBoard instance for button handling."""
     return self._board
 ```
 
@@ -53,6 +53,6 @@ Button press triggers:
 
 ## Relationships
 
-- Display owns WhisPlayBoard instance
-- WeatherApp registers callback with WhisPlayBoard via Display.board
+- Display owns WhisplayBoard instance
+- WeatherApp registers callback with WhisplayBoard via Display.board
 - Button callback triggers WeatherApp.cycle_station()

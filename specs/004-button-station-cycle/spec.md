@@ -12,7 +12,7 @@ Add support for the PiSugar Whisplay's physical button. When pressed, the displa
 
 ### Functional Requirements
 
-1. **Button Press Detection**: Register a callback with the WhisPlayBoard for button press events
+1. **Button Press Detection**: Register a callback with the WhisplayBoard for button press events
    - Use `board.on_button_press(callback)` API from WhisPlay driver
    - Callback should trigger station cycling
 
@@ -38,7 +38,7 @@ Add support for the PiSugar Whisplay's physical button. When pressed, the displa
 
 ## Technical Approach
 
-1. Expose the WhisPlayBoard instance from Display class via property
+1. Expose the WhisplayBoard instance from Display class via property
 2. In WeatherApp, register button callback after display initialization
 3. Button callback calls `cycle_station()` and resets cycle timer
 4. Handle thread safety with proper synchronization if needed

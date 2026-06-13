@@ -10,12 +10,12 @@
 **Decision**: Use PIL Image.transpose() or rotate() to handle orientation at the rendering level, not the display driver level.
 
 **Rationale**: 
-- The ST7789 display controller and WhisPlayBoard driver expect data in a fixed format
+- The ST7789 display controller and WhisplayBoard driver expect data in a fixed format
 - Rotating the rendered PIL Image before converting to RGB565 is simpler and more reliable
 - This keeps display.py unchanged and puts orientation logic in the screen rendering
 
 **Alternatives considered**:
-- Hardware rotation via ST7789 MADCTL register: Rejected - would require modifying WhisPlayBoard driver
+- Hardware rotation via ST7789 MADCTL register: Rejected - would require modifying WhisplayBoard driver
 - Swapping width/height in display driver: Rejected - could cause issues with RGB565 conversion
 
 ### 2. Optimal landscape layout design

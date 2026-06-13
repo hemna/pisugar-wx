@@ -52,11 +52,11 @@ if self.button_pressed:
 
 **Chosen**: Option A (direct call) - `cycle_station()` is fast (just updates state and fetches from cache), and the display update happens in the main loop anyway.
 
-### 3. Exposing WhisPlayBoard from Display Class
+### 3. Exposing WhisplayBoard from Display Class
 
 **Decision**: Add `board` property to Display class
 **Rationale**:
-- Keep Display class as the single point of access to WhisPlayBoard
+- Keep Display class as the single point of access to WhisplayBoard
 - App doesn't need to import WhisPlay directly
 - Allows graceful handling when display is unavailable
 
@@ -64,7 +64,7 @@ if self.button_pressed:
 ```python
 @property
 def board(self):
-    """Get the underlying WhisPlayBoard instance."""
+    """Get the underlying WhisplayBoard instance."""
     return self._board
 ```
 
@@ -72,7 +72,7 @@ def board(self):
 
 **Decision**: Skip button setup if board is None (MockDisplay)
 **Rationale**:
-- MockDisplay doesn't have a WhisPlayBoard
+- MockDisplay doesn't have a WhisplayBoard
 - Application should continue working without button support
 - Log warning if button setup fails
 

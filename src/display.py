@@ -1,18 +1,18 @@
-"""Display driver for PiSugar Whisplay HAT using WhisPlayBoard."""
+"""Display driver for PiSugar Whisplay HAT using WhisplayBoard."""
 
 import logging
 import os
 import sys
 
 # Add WhisPlay driver to path
-whisplay_driver_path = os.path.expanduser("~/Whisplay/Driver")
+whisplay_driver_path = os.path.expanduser("~/Whisplay/runtime")
 if os.path.exists(whisplay_driver_path):
     sys.path.insert(0, whisplay_driver_path)
 
 logger = logging.getLogger(__name__)
 
 try:
-    from WhisPlay import WhisPlayBoard
+    from WhisPlay import WhisplayBoard
     WHISPLAY_AVAILABLE = True
 except ImportError as e:
     WHISPLAY_AVAILABLE = False
@@ -46,7 +46,7 @@ class Display:
     
     def _initialize_display(self) -> None:
         """Initialize the WhisPlay display."""
-        self._board = WhisPlayBoard()
+        self._board = WhisplayBoard()
         self._board.set_backlight(self.brightness)
         logger.info("Display initialized successfully")
     
@@ -70,7 +70,7 @@ class Display:
                 image = image.convert('RGB')
             
             # Convert RGB to RGB565 (16-bit color) as byte array
-            # WhisPlayBoard expects two bytes per pixel (high byte, low byte)
+            # WhisplayBoard expects two bytes per pixel (high byte, low byte)
             pixels = list(image.getdata())
             rgb565_data = []
             for r, g, b in pixels:
@@ -108,10 +108,10 @@ class Display:
 
     @property
     def board(self):
-        """Get the underlying WhisPlayBoard instance.
+        """Get the underlying WhisplayBoard instance.
         
         Returns:
-            WhisPlayBoard instance or None if not available.
+            WhisplayBoard instance or None if not available.
         """
         return self._board
 

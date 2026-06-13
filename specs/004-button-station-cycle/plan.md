@@ -10,7 +10,7 @@ Add physical button support for the PiSugar Whisplay HAT. When the button is pre
 ## Technical Context
 
 **Language/Version**: Python 3.11+
-**Primary Dependencies**: WhisPlayBoard driver (button handling), threading (callback safety)
+**Primary Dependencies**: WhisplayBoard driver (button handling), threading (callback safety)
 **Storage**: N/A - no new configuration needed
 **Testing**: pytest (with mock button callbacks)
 **Target Platform**: Raspberry Pi Zero W with PiSugar Whisplay HAT
@@ -47,7 +47,7 @@ specs/004-button-station-cycle/
 
 ```text
 src/
-├── display.py           # Add board property to expose WhisPlayBoard
+├── display.py           # Add board property to expose WhisplayBoard
 ├── app.py               # Register button callback, handle button press
 └── ...
 ```
