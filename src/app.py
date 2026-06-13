@@ -87,7 +87,7 @@ class WeatherApp:
         self._register_button_callback()
     
     def _register_button_callback(self) -> None:
-        """Register button press callback with the WhisPlayBoard.
+        """Register button press callback with the WhisplayBoard.
         
         Gracefully handles cases where board is not available (mock display).
         """
@@ -107,7 +107,7 @@ class WeatherApp:
         
         If showing radar, skip to next station's weather.
         If showing weather, skip to radar (if enabled) or cycle to next station.
-        Called from WhisPlayBoard's button handler thread.
+        Called from WhisplayBoard's button handler thread.
         """
         if self.showing_radar:
             # Skip radar, go to next station's weather

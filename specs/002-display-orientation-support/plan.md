@@ -10,7 +10,7 @@ Add support for both portrait (240x280) and landscape (280x240) display orientat
 ## Technical Context
 
 **Language/Version**: Python 3.11  
-**Primary Dependencies**: PIL/Pillow (image rendering), WhisPlayBoard driver (display hardware)  
+**Primary Dependencies**: PIL/Pillow (image rendering), WhisplayBoard driver (display hardware)  
 **Storage**: JSON configuration file (stations.json)  
 **Testing**: pytest (unit tests)  
 **Target Platform**: Raspberry Pi Zero 2 W with PiSugar Whisplay HAT (1.69" IPS LCD, ST7789 controller)

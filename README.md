@@ -38,9 +38,10 @@ Follow PiSugar's instructions to install the WhisPlay driver:
 
 ```bash
 cd ~
-git clone https://github.com/PiSugar/Whisplay.git
-cd Whisplay/Driver
-pip3 install .
+git clone https://github.com/PiSugar/Whisplay.git --depth 1
+cd Whisplay
+sudo bash install_driver.sh
+sudo reboot
 ```
 
 ### 2. Install PiSugar Weather Display

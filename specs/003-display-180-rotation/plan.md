@@ -10,7 +10,7 @@ Add a `display_rotation` configuration setting that allows users to rotate the d
 ## Technical Context
 
 **Language/Version**: Python 3.11+
-**Primary Dependencies**: PIL/Pillow (image rotation), WhisPlayBoard driver (display hardware)
+**Primary Dependencies**: PIL/Pillow (image rotation), WhisplayBoard driver (display hardware)
 **Storage**: JSON configuration file (`config/stations.json`)
 **Testing**: pytest
 **Target Platform**: Raspberry Pi Zero W with PiSugar Whisplay HAT

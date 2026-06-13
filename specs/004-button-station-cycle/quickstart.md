@@ -38,4 +38,4 @@ INFO - Fetched weather for ...
 
 ## No Configuration Required
 
-Button support is automatic when running on hardware with WhisPlayBoard.
+Button support is automatic when running on hardware with WhisplayBoard.
